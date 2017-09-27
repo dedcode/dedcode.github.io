@@ -1,0 +1,200 @@
+
+<html>
+<head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Djellel Difallah</title>
+
+<style type="text/css">
+body { background-color: #ffffff; text: #000000; link: #ff0000; }
+body  { 
+    background: #fefcfe;
+    margin: 0 500 0 500;
+    padding: 0;
+}
+
+h2 { background-color: #57068c; font-size: 14pt; color:#ffffff;} 
+</style>
+
+<script type="text/javascript">
+// Anti-Spam Email Displayer- By JavaScriptKit.com
+// Visit JavaScript Kit (http://javascriptkit.com) for this script and more.
+// This notice must stay intact for use
+
+var contacts=new Array()
+//Specify text and corresponding email address.
+//Use [at] and [dot] in place of "@" and "." for anti spam purpose:
+contacts[0]=["Djellel Difallah", "djellel[at]nyu[dot]edu"]
+
+//Specify caption text to display within SELECT menu. Only applicable if you're using the form option:
+var dropmenucaption="CONTACT US FORM "
+
+function displaycontact(emailarray, cssclass, displaymethod, extrainfo){
+if (displaymethod=="text"){
+document.write('<span class="' + cssclass + '">\n')
+if (typeof emailarray[0]=="object"){ //if array passed consists of multiple elements
+for (i=0; i<emailarray.length; i++){
+var seperator=(i<emailarray.length-1)? extrainfo : ""
+document.write('<a href="mailto:' + modifyemail(emailarray[i][1])+ '">'+ modifyemail(emailarray[i][1]) + '</a>' + seperator)
+}
+}
+else //else if it is a single array element
+document.write('<a href="mailto:' + modifyemail(emailarray[1])+ '">'+ modifyemail(emailarray[1]) + '</a>')
+document.write('</span>')
+}
+else if (displaymethod=="form"){
+document.write('<form>\n')
+document.write('<select size="' + extrainfo + '" onChange="jumptooption(this)" class="' + cssclass + '">\n')
+document.write('<option value="caption">' + dropmenucaption + '</option>\n')
+for (i=0; i<emailarray.length; i++)
+document.write('<option value="mailto:' + modifyemail(emailarray[i][1]) +'">' + emailarray[i][0] + '&nbsp;</option>\n')
+document.write('</select></form>\n')
+}
+}
+
+function modifyemail(emailitem){
+var modified=emailitem.replace(/\[at]/gi, "@")
+modified=modified.replace(/\[dot]/gi, ".")
+return modified
+}
+
+function jumptooption(themenu){
+if (themenu.options[themenu.selectedIndex].value !="caption")
+location=themenu.options[themenu.selectedIndex].value
+}
+
+
+</script>
+</head>
+
+<body>
+
+<h2>&nbsp</h2>
+
+<table width=900 NOSAVE>
+  <tr vAlign=top>
+    <td align="right" width=160><IMG src="files/dj.jpeg"></a><br>
+    <td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td><FONT SIZE="+3">Djellel Difallah<br>
+    Moore Sloan Data Science Fellow</FONT><br><br>
+    <FONT SIZE="+2">Center for Data Science<br>
+    NYU<br><br></FONT>
+    Email: <script type="text/javascript">displaycontact(contacts[0], "textstyle", "text", "")</script><br>
+    Phone: (917) 696-4069<br>
+    </td>
+  </tr>
+</table>
+
+<h3>
+<A href="#new">What's New</A>&nbsp;&nbsp;|&nbsp;&nbsp;
+<A href="#research">Research</A>&nbsp;&nbsp;|&nbsp;&nbsp; 
+<A href="https://scholar.google.ch/citations?user=K5d-OHEAAAAJ&hl=en">Publications</A>&nbsp;&nbsp;|&nbsp;&nbsp; 
+<A href="#awards">Awards</A>&nbsp;&nbsp;|&nbsp;&nbsp;
+<A href="#teaching">Teaching</A>&nbsp;&nbsp;|&nbsp;&nbsp;
+<A href="files/Difallah_CV.pdf">CV</A>&nbsp;&nbsp;|&nbsp;&nbsp;
+<A href="files/Difallah_Research.pdf">Research Statement</A>&nbsp;&nbsp;|&nbsp;&nbsp;
+<A href="#contact">Contact</A>&nbsp;&nbsp;|&nbsp;&nbsp;
+</h3>
+
+<a name="bio">
+<h2>Bio</h2>
+
+Djellel Eddine Difallah received his Ph.D. from the University of Fribourg (Switzerland) and worked thereafter as a Postdoctoral Researcher at the eXascale Infolab. His main research interests revolve around human computation and its application to data management, data processing, machine learning, natural language processing and knowledge extraction. Specifically, he investigates novel active learning techniques, Bayesian models for truth inference and task scheduling optimization problems. Djellel worked for Schlumberger and Microsoft and is an ACM member and a Fulbright Alumni. He is currently a Moore-Sloan Fellow at the Center for Data Science at New York University.
+
+<p><a name="new">
+<h2>What's New</h2>
+
+<ul>
+<li><IMG src="files/new.gif">New job! June 1st 2017 Djellel starts at NYU CDS as a Moore Sloan Data Science Fellow.
+<li>Grant accepted: <a href="https://fashionbrain-project.eu/">The FashionBrain project</a> is a €2.8m three year project funded by the European Commission’s Horizon 2020 programme! (2017-2020)
+<li>Grant accepted: The Swiss Commission for Technology and Innovation CTI (200K CHF) (2016-2018)
+</ul>
+</ul>
+
+
+<p><a name="research">
+<h2>Research Interests</h2>
+My main research interests revolve around human computation and its application to data management,
+data processing, machine learning, natural language processing and knowledge extraction. Specifically, I
+investigate novel human machine learning techniques, Bayesian models for truth inference, task scheduling 
+optimization problems and analysis of crowdsourcing marketplaces.<p><p>
+
+
+<!--
+<b>Current projects</b>
+<ul>
+<li><a href="research/bias.html">Search-engine bias</a>
+<table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
+Search engines are a big part of our everyday life. Most of us rely on search engines to discover and access contents from the Web. Does it mean that we are biased by what search engines process and present? What kind of and how much bias can search engines introduce? The primary goal of this research project is to investigate the problem of potential search-engine bias and come up with technical solutions to the problem.
+</td></tr></table>
+
+<li><u>Beyond keyword search</u>
+<table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
+Keyword-based search is a hugely successful and effective way to access textual information on the Web. We contend, however, that it is not the only way. The primary goal of this project is to develop new ways to access and exploit large-scale textual information, other than well-known keyword-based search. This is a new project that we just started.
+</td></tr></table>
+
+<li><u>Improving K-12 Math Education</u>
+table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
+In the last few decades, we have witnessed unprecedented progress in technology, but our math classroom 
+</td></tr></table>
+
+</ul>
+-->
+
+<b>Past projects</b>
+<ul>
+
+<li><a href="https://github.com/oltpbenchmark/oltpbench">OLTP-Bench</a>
+<table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
+OLTPBenchmark is a multi-threaded load generator. The framework is designed to be able to produce variable rate, variable mixture load against any JDBC-enabled relational database. The framework also provides data collection features, e.g., per-transaction-type latency and throughput logs.
+</td></tr></table>
+
+<li><a href="http://www-conf.slac.stanford.edu/xldb2011/Poster_Abstracts.asp">Implementing the SSDB Benchmark on SciDB</a>
+<table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
+SSDB is a benchmark modeled around an astronomy use-case with different levels of difficulty, mostly bound to the data size in order to test the scalability of the target systems. The input data is a collection of raw images randomly generated in a large space. The benchmark has a pre-processing phase--called ''Cooking''--that extracts notable features in the images, and a workload composed of nine different queries that manipulate both the extracted features and the raw imagery. The queries in SSDB reproduce common operations in science applications: spatial queries, aggregates, data processing, and geometry operations
+</td></tr></table>
+</ul>
+
+
+<p><a name="service">
+<h2>Recent Professional Activities</h2>
+
+<ul>
+<li>Program Committee, <a href="https://www2018.thewebconf.org/">27th International World Wide Web Conference (WWW 2018)</a>
+<li>Program Committee, <a href="http://www.www2017.com.au/">26th International World Wide Web Conference (WWW 2017)</a>
+<li>Program Committee, <a href="http://www.kdd.org/kdd2017/">23rd ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD 2017)</a>
+<li>Program Committee, <a href="http://cikm2017.org/">26th 2017 ACM Conference on Information and Knowledge Management (CIKM 2017)</a>
+<li>Program Committee, <a href="http://icwe2016.webengineering.org/">16th International Conference on Web Engineering (ICWE2016)</a>
+</ul>
+
+<p><a name="awards">
+<h2>Awards</h2>
+
+<ul>
+<li>Best Computer Science PhD Thesis Award, University of Fribourg 2015
+<li>Fulbright Scholarship, 2009-2011
+</ul>
+
+<p><a name="teaching">
+<h2>Teaching</h2>
+<LI>Big Data Infrastructures (University of Fribourg - Fall 2016)</LI>
+<LI>Data Science Seminar (University of Fribourg - Fall 2015)</LI>
+<LI>Social computing (Teaching Assistant) (University of Fribourg - 2011/2014)</LI>
+My teaching statement is available <A href="files/Difallah_Teaching.pdf">here</A>
+</UL>
+
+<p><a name="contact">
+<h2>Contact Information</h2>
+
+<ul>
+<li><b>Email</b>: <script type="text/javascript">displaycontact(contacts[0], "textstyle", "text", "")</script>
+<li><b>Phone</b>: (917) 696-4069
+<li><b>Office</b>: 622
+<li><b>Mailing address</b><br>
+Djellel Eddine Difallah<br>
+60 5th Avenue, 7th Floor<br> 
+New York, NY 10011
+</ul>
+<ADDRESS>Djellel Difallah</ADDRESS>
+</body></html>
