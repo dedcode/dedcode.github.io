@@ -8,13 +8,24 @@
 
 <style type="text/css">
 body { background-color: #ffffff; text: #000000; link: #ff0000; }
-body  { 
-    background: #fefcfe;
-    margin: 0 500 0 500;
-    padding: 0;
-}
 
-h2 { background-color: #57068c; font-size: 14pt; color:#ffffff;} 
+/**
+ * Wrapper
+ */
+.wrapper {
+  max-width: -webkit-calc(1000px - (30px * 2));
+  max-width: calc(1000px - (30px * 2));
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: 30px;
+  padding-left: 30px; }
+  @media screen and (max-width: 1000px) {
+    .wrapper {
+      max-width: -webkit-calc(1000px - (30px));
+      max-width: calc(1000px - (30px));
+      padding-right: 15px;
+      padding-left: 15px; } }
+
 </style>
 
 <script type="text/javascript">
@@ -70,34 +81,56 @@ location=themenu.options[themenu.selectedIndex].value
 
 <body>
 
+<div class="wrapper">
+
 <h2>&nbsp</h2>
 
 <table width=900 NOSAVE>
   <tr vAlign=top>
-    <td align="right" width=160><IMG src="files/dj.jpeg"></a><br>
+    <td align="right" width=160><IMG class="img-fluid rounded-circle" src="files/dj.jpeg"></a><br>
     <td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
     <td><FONT SIZE="+3">Djellel Difallah<br>
     Moore Sloan Data Science Fellow</FONT><br><br>
-    <FONT SIZE="+2">Center for Data Science<br>
-    NYU<br><br></FONT>
-    Email: <script type="text/javascript">displaycontact(contacts[0], "textstyle", "text", "")</script><br>
-    Phone: (917) 696-4069<br>
+    <FONT SIZE="+2">Center for Data Science<br>NYU<br><br></FONT>
+    <!--
+    Twitter: <a href="https://twitter.com/dedwit"> @dedwit </a> </br>
+    LinkedIn: <a href="https://www.linkedin.com/in/djellel/"> @djellel </a> </br>
+    Github: <a href="https://github.com/dedcode"> @dedcode </a>
+-->
     </td>
   </tr>
 </table>
 
-<h3>
-<A href="#new">What's New</A>&nbsp;&nbsp;|&nbsp;&nbsp;
-<A href="#research">Research</A>&nbsp;&nbsp;|&nbsp;&nbsp; 
-<A href="https://scholar.google.ch/citations?user=K5d-OHEAAAAJ&hl=en">Publications</A>&nbsp;&nbsp;|&nbsp;&nbsp; 
-<A href="#awards">Awards</A>&nbsp;&nbsp;|&nbsp;&nbsp;
-<A href="#teaching">Teaching</A>&nbsp;&nbsp;|&nbsp;&nbsp;
-<A href="files/Difallah_CV.pdf">CV</A>&nbsp;&nbsp;|&nbsp;&nbsp;
-<A href="files/Difallah_Research.pdf">Research Statement</A>&nbsp;&nbsp;|&nbsp;&nbsp;
-<A href="#contact">Contact</A>&nbsp;&nbsp;|&nbsp;&nbsp;
-</h3>
+
+<ul class="nav">
+  <li class="nav-item">
+    <A class="nav-link" href="#new">What's New</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link" href="#research">Research</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link" href="https://scholar.google.ch/citations?user=K5d-OHEAAAAJ&hl=en">Publications</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link" href="#awards">Awards</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link" href="#teaching">Teaching</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link" href="files/Difallah_CV.pdf">CV</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link disabled" href="#">Blog</A>
+  </li>
+  <li class="nav-item">
+    <A class="nav-link" href="#contact">Contact</A>
+  </li>
+</ul>
 
 <a name="bio">
+
 <h2>Bio</h2>
 
 Djellel Eddine Difallah received his Ph.D. from the University of Fribourg (Switzerland) and worked thereafter as a Postdoctoral Researcher at the eXascale Infolab. His main research interests revolve around human computation and its application to data management, data processing, machine learning, natural language processing and knowledge extraction. Specifically, he investigates novel active learning techniques, Bayesian models for truth inference and task scheduling optimization problems. Djellel worked for Schlumberger and Microsoft and is an ACM member and a Fulbright Alumni. He is currently a Moore-Sloan Fellow at the Center for Data Science at New York University.
@@ -106,7 +139,7 @@ Djellel Eddine Difallah received his Ph.D. from the University of Fribourg (Swit
 <h2>What's New</h2>
 
 <ul>
-<li><IMG src="files/new.gif">New job! June 1st 2017 Djellel starts at NYU CDS as a Moore Sloan Data Science Fellow.
+<li><span class="badge badge-success">Latest news</span> Starting June 1st 2017 Djellel starts at NYU CDS as a Moore Sloan Data Science Fellow.
 <li>Grant accepted: <a href="https://fashionbrain-project.eu/">The FashionBrain project</a> is a €2.8m three year project funded by the European Commission’s Horizon 2020 programme! (2017-2020)
 <li>Grant accepted: The Swiss Commission for Technology and Innovation CTI (200K CHF) (2016-2018)
 </ul>
@@ -118,29 +151,11 @@ Djellel Eddine Difallah received his Ph.D. from the University of Fribourg (Swit
 My main research interests revolve around human computation and its application to data management,
 data processing, machine learning, natural language processing and knowledge extraction. Specifically, I
 investigate novel human machine learning techniques, Bayesian models for truth inference, task scheduling 
-optimization problems and analysis of crowdsourcing marketplaces.<p><p>
+optimization problems and analysis of crowdsourcing marketplaces.
+<p>
+More details can be found on my research statement for more information: <A href="files/Difallah_Research.pdf">Research Statement</A>
+<p>
 
-
-<!--
-<b>Current projects</b>
-<ul>
-<li><a href="research/bias.html">Search-engine bias</a>
-<table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
-Search engines are a big part of our everyday life. Most of us rely on search engines to discover and access contents from the Web. Does it mean that we are biased by what search engines process and present? What kind of and how much bias can search engines introduce? The primary goal of this research project is to investigate the problem of potential search-engine bias and come up with technical solutions to the problem.
-</td></tr></table>
-
-<li><u>Beyond keyword search</u>
-<table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
-Keyword-based search is a hugely successful and effective way to access textual information on the Web. We contend, however, that it is not the only way. The primary goal of this project is to develop new ways to access and exploit large-scale textual information, other than well-known keyword-based search. This is a new project that we just started.
-</td></tr></table>
-
-<li><u>Improving K-12 Math Education</u>
-table><tr><td>&nbsp;&nbsp;&nbsp;</td><td>
-In the last few decades, we have witnessed unprecedented progress in technology, but our math classroom 
-</td></tr></table>
-
-</ul>
--->
 
 <b>Past projects</b>
 <ul>
@@ -178,9 +193,9 @@ SSDB is a benchmark modeled around an astronomy use-case with different levels o
 
 <p><a name="teaching">
 <h2>Teaching</h2>
-<LI>Big Data Infrastructures (University of Fribourg - Fall 2016)</LI>
-<LI>Data Science Seminar (University of Fribourg - Fall 2015)</LI>
-<LI>Social computing (Teaching Assistant) (University of Fribourg - 2011/2014)</LI>
+<LI>Big Data Infrastructures (University of Fribourg - Fall 2016) - Lecturer</LI>
+<LI>Data Science Seminar (University of Fribourg - Fall 2015) -  Lecturer</LI>
+<LI>Social computing (University of Fribourg - 2011/2014) - Teaching Assistant</LI>
 My teaching statement is available <A href="files/Difallah_Teaching.pdf">here</A>
 </UL>
 
@@ -197,4 +212,6 @@ Djellel Eddine Difallah<br>
 New York, NY 10011
 </ul>
 <ADDRESS>Djellel Difallah</ADDRESS>
-</body></html>
+</div>
+</body>
+</html>
