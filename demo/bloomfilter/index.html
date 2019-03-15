@@ -1,0 +1,256 @@
+<html><head><title>Bloom Filters by Example</title>
+<style type="text/css">
+table#bitvector {
+	border-width: 1px;
+	border-spacing: 0px;
+	border-style: none;
+	border-color: rgb(51, 51, 51);
+	border-collapse: collapse;
+	background-color: white;
+    margin: auto;
+}
+table#bitvector th {
+	border-width: 1px;
+	padding: 1px;
+	border-style: solid;
+	border-color: rgb(221, 221, 221);
+	background-color: white;
+	-moz-border-radius: ;
+}
+table#bitvector td {
+	border-width: 1px;
+	padding: 1px;
+	border-style: solid;
+	border-color: rgb(221, 221, 221);
+	background-color: white;
+	-moz-border-radius: ;
+}
+.active {
+    background-color: green !important;
+}
+.set {
+    background-color: black !important;
+}
+#content {
+    width: 650px;
+    margin: auto;
+    background-color: #fff;
+    padding: 20px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+body { background-color: #ffffff; text: #000000; link: #ff0000; }
+p {
+  line-height: 1.2em;
+  margin: 1em 0px;
+}
+sup {
+  font-size: 0.75em;
+  line-height: 0.5em;
+}
+.insetbox {
+    width: 400px;
+    margin: auto;
+    background-color: #f1f1ce;
+    padding: 10px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+#addstring {
+}
+#testmembership {
+}
+#ismember {
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+<script src="./murmurhash.js"></script>
+<script>
+
+var seed1 = Math.floor(Math.random() * 2e32);
+var seed2 = Math.floor(Math.random() * 2e32);
+function hashMix(hash_key) {
+  var a = seed1;
+  var b = seed2;
+  var c = hash_key;
+  console.log(a, b, c);
+
+  a -= (b + c);  a ^= (c >> 13);
+  b -= (c + a);  b ^= (a << 8);
+  c -= (a + b);  c ^= (b >> 13);
+  a -= (b + c);  a ^= (c >> 12);
+  b -= (c + a);  b ^= (a << 16);
+  c -= (a + b);  c ^= (b >> 5);
+  a -= (b + c);  a ^= (c >> 3);
+  b -= (c + a);  b ^= (a << 10);
+  c -= (a + b);  c ^= (b >> 15);
+
+  //XXX: can this even be negative? It was designed to run with uints. Javascript is dumb.
+  return Math.abs(c);
+}
+
+// thanks Borgar!
+// http://stackoverflow.com/questions/1240408/reading-bytes-from-a-javascript-string/1242596#1242596
+function stringToBytes(str) {
+  var ch, st, re = [];
+  for (var i = 0; i < str.length; i++) {
+    ch = str.charCodeAt(i);  // get char
+    st = [];                 // set up "stack"
+    do {
+      st.push( ch & 0xFF );  // push byte to stack
+      ch = ch >> 8;          // shift value down by 1 byte
+    }
+    while ( ch );
+    // add stack contents to result
+    // done because chars have "wrong" endianness
+    re = re.concat( st.reverse() );
+  }
+ // return an array of bytes
+  return re;
+}
+
+var FNVPRIME = 0x01000193;
+var FNVINIT = 0x811c9dc5;
+
+function fnv1s(str) {
+  var bytes = stringToBytes(str);
+  var hash = FNVINIT;
+  for (var i=0; i < bytes.length; i++) {
+    hash *= FNVPRIME;
+    hash ^= bytes[i];
+  }
+  return Math.abs(hash);
+}
+
+nboxes = 15;
+strings = [];
+
+function bloom(s) {
+  $(".active").attr("class", "set");
+
+  strings.push(s);
+  $("#yourset").html(strings.join(", "));
+
+  //clear the text input box
+  $("#addtoset").val("");
+
+  var a = fnv1s(s) % nboxes;
+  var b = murmur(s) % nboxes;
+
+  $("#bit[i='" + a + "']").attr("class", "active");
+  $("#bit[i='" + b + "']").attr("class", "active");
+
+  //the probability of a false positive is the number of 1s in the bit vector
+  //divided by the number of bits in the vector to the power of k, the number
+  //of index functions you're using
+  var p = Math.round((Math.pow($(".set, .active").length / nboxes, 2)) * 100);
+  $("#false_pos_prob").html(p + "%");
+}
+
+function testMembership(evt) {
+  //clear out "active" cells
+  $(".active").attr("class", "set");
+
+  var s = $("#membership").val();
+
+  var a = fnv1s(s) % nboxes;
+  var b = murmur(s) % nboxes;
+
+  if ($("#bit[i='" + a + "']").attr("class") == "set" &&
+      $("#bit[i='" + b + "']").attr("class") == "set") {
+    $("#ismember").html("maybe!");
+  } else {
+    $("#ismember").html("no");
+  }
+
+  $("#memfnv").html(a)
+  $("#memmurmur").html(b)
+}
+
+$(function() {
+  //add the table cells which represent our bloom filter bit array
+  for (var i=0; i<nboxes; i++) {
+    $("#bits").append('<td id="bit" i="' + i + '" width=20>&nbsp;</td>');
+    $("#labels").append('<td id="label" i="' + i + '" align="center">' + i + '</td>');
+  }
+
+  //handle a click on the "add to bloom filter" button
+  $("#hash").click(function() {
+    var s = $("#addtoset").val();
+    $("#fnv").html(fnv1s(s) % nboxes)
+    $("#murmur").html(murmur(s) % nboxes)
+    bloom(s);
+  });
+
+  // handle enter key on "add to bloom filter" form
+  $('#addtoset').keydown(function (event) {
+    if (event.keyCode == '13') {
+     event.preventDefault();
+     $('#hash').click();
+    }
+  });
+
+  $("#membership").keyup(testMembership);
+});
+</script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4514581-2']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</head><body>
+<div id="content">
+    <h1>Bloom Filters Example</h1>
+
+    <p>The base data structure of a Bloom filter is a <strong>Bit Vector</strong>.  
+    For demonstration purpose, we are going to use a 15 bits vector.
+
+    <div class="insetbox">
+        <table id="bitvector" border=1 cellpadding=0 cellspacing=0>
+          <tr id="bits"></tr>
+          <tr id="labels"></tr>
+        </table>
+    </div>
+
+    <p>In this example, our Bloom Filter uses 2 hash functions "FNV" and "Murmur".
+
+    <p> Insertion:
+
+    <div id="addstring" class="insetbox">
+        <p>Enter a string: <input id="addtoset"><input type="submit" id="hash" value="add to bloom filter">
+
+        <div id="hashes">
+          fnv: <span id="fnv"></span><br>
+          murmur: <span id="murmur"></span>
+        </div>
+
+        <p>Your set: [<span id="yourset"></span>]
+    </div>
+
+    <p> Membership test:
+
+    <div id="testmembership" class="insetbox">
+        <p>Test an element for membership: <input id="membership">
+        <div id="memhashes">
+            fnv: <span id="memfnv"></span><br>
+            murmur: <span id="memmurmur"></span>
+        </div>
+
+        <p>Is the element in the set? <span id="ismember">no</span>
+
+      
+    </div>
+
+
+</div>
+</body></html>
