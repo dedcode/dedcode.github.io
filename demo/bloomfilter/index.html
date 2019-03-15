@@ -114,7 +114,7 @@ function stringToBytes(str) {
 var FNVPRIME = 0x01000193;
 var FNVINIT = 0x811c9dc5;
 
-function fnv1s(str) {
+function fnv2s(str) {
   var bytes = stringToBytes(str);
   var hash = FNVINIT;
   for (var i=0; i < bytes.length; i++) {
@@ -122,6 +122,11 @@ function fnv1s(str) {
     hash ^= bytes[i];
   }
   return Math.abs(hash);
+}
+
+function fnv1s(str) {
+  var bytes = stringToBytes(str);
+  return Math.abs(bytes);
 }
 
 nboxes = 15;
@@ -192,22 +197,16 @@ $(function() {
     }
   });
 
+  $("#addtoset").keyup(function(event){
+    var s = $("#addtoset").val();
+    $("#fnv").html(fnv1s(s) % nboxes)
+    $("#murmur").html(murmur(s) % nboxes)
+  });
   $("#membership").keyup(testMembership);
 });
 </script>
-<script type="text/javascript">
 
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-4514581-2']);
-  _gaq.push(['_trackPageview']);
 
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
-</script>
 </head><body>
 <div id="content">
     <h1>Bloom Filters Example</h1>
@@ -247,7 +246,7 @@ $(function() {
         </div>
 
         <p>Is the element in the set? <span id="ismember">no</span>
-
+        <p>Probability of a false positive: <span id="false_pos_prob">0%</span>
       
     </div>
 
