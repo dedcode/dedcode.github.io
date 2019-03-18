@@ -114,7 +114,7 @@ function stringToBytes(str) {
 var FNVPRIME = 0x01000193;
 var FNVINIT = 0x811c9dc5;
 
-function fnv2s(str) {
+function fnv1s(str) {
   var bytes = stringToBytes(str);
   var hash = FNVINIT;
   for (var i=0; i < bytes.length; i++) {
@@ -122,11 +122,6 @@ function fnv2s(str) {
     hash ^= bytes[i];
   }
   return Math.abs(hash);
-}
-
-function fnv1s(str) {
-  var bytes = stringToBytes(str);
-  return Math.abs(bytes);
 }
 
 nboxes = 15;
@@ -197,11 +192,6 @@ $(function() {
     }
   });
 
-  $("#addtoset").keyup(function(event){
-    var s = $("#addtoset").val();
-    $("#fnv").html(fnv1s(s) % nboxes)
-    $("#murmur").html(murmur(s) % nboxes)
-  });
   $("#membership").keyup(testMembership);
 });
 </script>
