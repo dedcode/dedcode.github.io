@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickSort Partition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .array-element {
+            width: 55px; 
+            height: 55px;
+            border: 2px solid #4A5568; /* gray-700 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem; /* text-lg */
+            font-weight: bold;
+            margin: 0 3px;
+            background-color: #E2E8F0; /* gray-200 */
+            border-radius: 0.375rem; /* rounded-md */
+            transition: transform 0.4s ease-in-out, background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+        .pointer {
+            position: absolute;
+            font-size: 0.8rem; /* text-xs */
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 0.25rem; /* rounded-sm */
+            color: white;
+            transition: left 0.4s ease-in-out, opacity 0.3s, bottom 0.4s ease-in-out, top 0.4s ease-in-out; 
+            white-space: nowrap;
+            z-index: 10; 
+        }
+        .pivot-pointer { background-color: #DD6B20; /* orange-600 */ }
+        .i-pointer { background-color: #3182CE; /* blue-600 */ }
+        .j-pointer { background-color: #38A169; /* green-600 */ }
+        .code-line {
+            padding: 3px 6px;
+            margin-bottom: 1px;
+            border-radius: 0.25rem; /* rounded-sm */
+            transition: background-color 0.3s;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.75rem; 
+            white-space: pre; 
+        }
+        .highlight-code {
+            background-color: #FEEBC8; /* orange-100 */
+            border-left: 3px solid #DD6B20; /* orange-600 */
+        }
+        .comment-code { color: #718096; /* gray-500 */ }
+        .swapping {
+            background-color: #F56565 !important; /* red-500 */
+            color: white;
+        }
+        .pivot-location-highlight { /* New class for persistent pivot highlight */
+            border-color: #DD6B20 !important; /* orange-600 */
+            box-shadow: 0 0 0 2px #DD6B20 inset; /* orange-600, inset for better appearance */
+            /* background-color: #FFFBEB; */ /* very light yellow, optional */
+        }
+        .info-box div {
+            margin-bottom: 4px;
+            padding: 4px;
+            background-color: #F7FAFC; /* gray-50 */
+            border-radius: 0.25rem; /* rounded-sm */
+            border: 1px solid #E2E8F0; /* gray-200 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-6">
+    <div class="container mx-auto max-w-6xl bg-white p-6 rounded-xl shadow-xl">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-6">QuickSort In-Place Partition (Step-by-Step)</h1>
+
+        <div class="mb-6">
+            <h2 class="text-lg md:text-xl font-semibold text-gray-600 mb-2">Array:</h2>
+            <div id="array-container" class="flex justify-center items-end relative h-24">
+                </div>
+            <div id="pointers-container-above" class="relative h-20 w-full"> </div>
+            <div id="pointers-container-below" class="relative h-1 w-full mt-1"> </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <h2 class="text-lg md:text-xl font-semibold text-gray-600 mb-2">Pseudocode:</h2>
+                <ul id="pseudocode-container" class="bg-gray-50 p-2 rounded-md shadow text-xs">
+                    </ul>
+            </div>
+            <div>
+                <h2 class="text-lg md:text-xl font-semibold text-gray-600 mb-2">Info:</h2>
+                <div class="info-box text-xs text-gray-700">
+                    <div id="info-array">Array A: -</div>
+                    <div id="info-pivot-idx">pivotIndex: -</div>
+                    <div id="info-left">left: -</div>
+                    <div id="info-right">right: -</div>
+                    </div>
+
+                <button id="run-partition-btn" class="mt-4 w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg transition duration-150 ease-in-out text-sm">
+                    Run Partition
+                </button>
+                <button id="step-forward-btn" class="mt-2 w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition duration-150 ease-in-out hidden text-sm">
+                    Step Forward
+                </button>
+                 <button id="reset-btn" class="mt-2 w-full bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg transition duration-150 ease-in-out hidden text-sm">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const arrayContainer = document.getElementById('array-container');
+        const pointersContainerAbove = document.getElementById('pointers-container-above');
+        const pseudocodeContainer = document.getElementById('pseudocode-container');
+        // Pivot Value and Comparison display elements are no longer primary info displays
+        // const pivotValueDisplay = document.getElementById('pivot-value-display'); 
+        // const comparisonDisplay = document.getElementById('comparison-display');
+        const runPartitionBtn = document.getElementById('run-partition-btn');
+        const stepForwardBtn = document.getElementById('step-forward-btn');
+        const resetButton = document.getElementById('reset-btn');
+
+        const infoArrayDisplay = document.getElementById('info-array');
+        const infoPivotIdxDisplay = document.getElementById('info-pivot-idx');
+        const infoLeftDisplay = document.getElementById('info-left');
+        const infoRightDisplay = document.getElementById('info-right');
+
+        const ANIMATION_SPEED_MS = 500; 
+        const SWAP_ANIMATION_MS = 400;  
+        const DEFAULT_ARRAY_SIZE = 8;
+        const RANDOM_NUMBER_MIN = 1;
+        const RANDOM_NUMBER_MAX = 100;
+
+        const POINTER_BASE_OFFSET_ABOVE = 3; 
+        const POINTER_LEVEL_HEIGHT = 18;    
+
+        const pseudocode = [
+            /*0*/ "Function Partition(A, pivotIndex, left, right)",
+            /*1*/ "    // Move pivot to the front",
+            /*2*/ "    pivotValue ← A[pivotIndex]",
+            /*3*/ "    swap A[pivotIndex] with A[left]",
+            /*4*/ "    // i will mark the boundary of < pivot",
+            /*5*/ "    i ← left + 1",
+            /*6*/ "    // Partition the rest",
+            /*7*/ "    for j ← left + 1 to right do",
+            /*8*/ "        if A[j] < pivotValue then",
+            /*9*/ "            swap A[j] with A[i]",
+            /*10*/"            i ← i + 1",
+            /*11*/"    // Put pivot into its final place", 
+            /*12*/"    swap A[left] with A[i − 1]",       
+            /*13*/"End Function"                          
+        ];
+
+        let currentArray = [];
+        let arrayElements = []; 
+        let pointerDOMElements = {}; 
+        let animationInProgress = false;
+        let partitionGeneratorInstance = null;
+        let currentPivotHolderIndex = -1; // To track the index of the element holding the pivot value
+
+
+        async function delay(ms) { 
+            return new Promise(res => setTimeout(res, ms));
+        }
+
+        function generateRandomArray(size, min, max) {
+            const arr = [];
+            for (let k = 0; k < size; k++) {
+                arr.push(Math.floor(Math.random() * (max - min + 1)) + min);
+            }
+            return arr;
+        }
+
+        function renderPseudocode() {
+            pseudocodeContainer.innerHTML = '';
+            pseudocode.forEach((line, index) => {
+                const li = document.createElement('li');
+                li.textContent = line;
+                li.classList.add('code-line');
+                li.id = `code-line-${index}`;
+                if (line.trim().startsWith("//")) {
+                    li.classList.add('comment-code');
+                }
+                pseudocodeContainer.appendChild(li);
+            });
+        }
+
+        let lastHighlightedLine = -1;
+        function highlightCodeLine(lineNumber) {
+            if (lastHighlightedLine !== -1 && document.getElementById(`code-line-${lastHighlightedLine}`)) {
+                document.getElementById(`code-line-${lastHighlightedLine}`).classList.remove('highlight-code');
+            }
+            if (lineNumber !== -1 && lineNumber < pseudocode.length) {
+                const lineEl = document.getElementById(`code-line-${lineNumber}`);
+                if (lineEl) {
+                     lineEl.classList.add('highlight-code');
+                     lineEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                lastHighlightedLine = lineNumber;
+            } else {
+                lastHighlightedLine = -1;
+            }
+        }
+        
+        function updateInfoDisplays(type, message) {
+            // Only updates the initial arguments display now
+            if (type === "initialArgs") {
+                infoArrayDisplay.textContent = `Array A: [${message.array.join(', ')}]`;
+                infoPivotIdxDisplay.textContent = `pivotIndex: ${message.pivotIndex}`;
+                infoLeftDisplay.textContent = `left: ${message.left}`;
+                infoRightDisplay.textContent = `right: ${message.right}`;
+            } else if (type === "clearInitialArgs") {
+                 infoArrayDisplay.textContent = `Array A: -`;
+                infoPivotIdxDisplay.textContent = `pivotIndex: -`;
+                infoLeftDisplay.textContent = `left: -`;
+                infoRightDisplay.textContent = `right: -`;
+            }
+        }
+
+        function renderArray(arr, highlights = {}) {
+            arrayContainer.innerHTML = ''; 
+            arrayElements = []; 
+            arr.forEach((value, index) => {
+                const element = document.createElement('div');
+                element.classList.add('array-element');
+                element.textContent = value;
+                element.id = `array-el-${index}`;
+                if (highlights.swap && highlights.swap.includes(index)) element.classList.add('swapping');
+                
+                // Apply persistent pivot location highlight
+                if (highlights.pivotLocation === index) {
+                    element.classList.add('pivot-location-highlight');
+                }
+                arrayContainer.appendChild(element);
+                arrayElements.push(element);
+            });
+        }
+
+        function createOrUpdatePointer(name, targetIndex, labelText) {
+            const position = "above"; 
+            const container = pointersContainerAbove;
+            let pointerEl = pointerDOMElements[name];
+
+            if (!pointerEl) {
+                pointerEl = document.createElement('div');
+                pointerEl.classList.add('pointer');
+                if (name === 'pivot') pointerEl.classList.add('pivot-pointer');
+                else if (name === 'i') pointerEl.classList.add('i-pointer');
+                else if (name === 'j') pointerEl.classList.add('j-pointer');
+                container.appendChild(pointerEl);
+                pointerDOMElements[name] = pointerEl;
+            }
+            pointerEl.innerHTML = labelText; 
+            pointerEl.dataset.targetIndex = targetIndex; 
+            pointerEl.dataset.position = position;
+
+            let levelOffset = POINTER_BASE_OFFSET_ABOVE;
+            if (name === 'i') levelOffset += POINTER_LEVEL_HEIGHT;
+            else if (name === 'pivot') levelOffset += 2 * POINTER_LEVEL_HEIGHT;
+
+            if (targetIndex >= 0 && targetIndex < arrayElements.length) {
+                const targetElement = arrayElements[targetIndex];
+                 if (!targetElement) { pointerEl.style.opacity = '0'; return; }
+                const targetRect = targetElement.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const pointerOffsetLeft = targetRect.left - containerRect.left + (targetRect.width / 2) - (pointerEl.offsetWidth / 2);
+                pointerEl.style.left = `${pointerOffsetLeft}px`;
+                pointerEl.style.opacity = '1';
+                pointerEl.style.top = ''; 
+                pointerEl.style.bottom = `${containerRect.height - (targetRect.top - containerRect.top) + levelOffset}px`; 
+            } else if (targetIndex === Infinity && name === 'i') { 
+                const lastElement = arrayElements[arrayElements.length - 1];
+                if (lastElement) {
+                    const targetRect = lastElement.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    const pointerOffsetLeft = targetRect.right - containerRect.left + 10; 
+                    pointerEl.style.left = `${pointerOffsetLeft}px`;
+                    pointerEl.style.top = ''; 
+                    pointerEl.style.bottom = `${containerRect.height - (targetRect.top - containerRect.top) + levelOffset}px`;
+                    pointerEl.style.opacity = '1';
+                } else { pointerEl.style.opacity = '0'; }
+            } else { pointerEl.style.opacity = '0'; }
+        }
+
+        async function animateSwap(idx1, idx2) {
+            if (idx1 === idx2) return; 
+            const el1 = arrayElements[idx1];
+            const el2 = arrayElements[idx2];
+            if (!el1 || !el2) return; 
+            el1.classList.add('swapping');
+            el2.classList.add('swapping');
+            await delay(ANIMATION_SPEED_MS / 2); 
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+            const translateX1 = rect2.left - rect1.left;
+            const translateX2 = rect1.left - rect2.left;
+            el1.style.transform = `translateX(${translateX1}px)`;
+            el2.style.transform = `translateX(${translateX2}px)`;
+            await delay(SWAP_ANIMATION_MS);
+            el1.style.transform = '';
+            el2.style.transform = '';
+        }
+
+        async function* partitionStepGenerator(A, pivotInitialIdx, left, right) {
+            currentArray = [...A]; 
+            currentPivotHolderIndex = pivotInitialIdx; // Track the element holding the pivot
+            renderArray(currentArray, { pivotLocation: currentPivotHolderIndex }); 
+            
+            updateInfoDisplays("initialArgs", {array: A, pivotIndex: pivotInitialIdx, left: left, right: right});
+
+            highlightCodeLine(0); 
+            createOrUpdatePointer('pivot', pivotInitialIdx, `p (${pivotInitialIdx})`); 
+            yield; 
+
+            highlightCodeLine(2); 
+            const pivotValue = currentArray[pivotInitialIdx]; 
+            // updateInfoDisplays("pivotVal", `${pivotValue} (from A[${pivotInitialIdx}])`); // Removed
+            yield;
+
+            highlightCodeLine(3); 
+            // updateInfoDisplays("comparison", `Swapping pivot (A[${pivotInitialIdx}]=${currentArray[pivotInitialIdx]}) with A[${left}]=${currentArray[left]}`); // Removed
+            renderArray(currentArray, { swap: [pivotInitialIdx, left], pivotLocation: currentPivotHolderIndex }); 
+            await delay(ANIMATION_SPEED_MS / 2); 
+            if (pivotInitialIdx !== left) {
+                await animateSwap(pivotInitialIdx, left);
+                [currentArray[pivotInitialIdx], currentArray[left]] = [currentArray[left], currentArray[pivotInitialIdx]];
+            }
+            currentPivotHolderIndex = left; // Pivot value is now at 'left'
+            renderArray(currentArray, { pivotLocation: currentPivotHolderIndex }); 
+            createOrUpdatePointer('pivot', left, `p (${left})`); 
+            // updateInfoDisplays("clearComparison"); // Removed
+            yield;
+
+            highlightCodeLine(5); 
+            let i = left + 1;
+            let iTargetIndex = (i >= 0 && i < currentArray.length) ? i : (i === currentArray.length ? Infinity : -1);
+            createOrUpdatePointer('i', iTargetIndex, `i (${i})`);
+            yield;
+
+            let j_initial_pos = left + 1;
+            let jInitialTargetIndex = (j_initial_pos >= 0 && j_initial_pos < currentArray.length) ? j_initial_pos : right;
+            if (j_initial_pos > right && right >=0) jInitialTargetIndex = right; 
+            else if (j_initial_pos > right && right < 0) jInitialTargetIndex = -1; 
+            createOrUpdatePointer('j', jInitialTargetIndex, `j (${j_initial_pos > right && right >=0 ? right : (j_initial_pos <= right ? j_initial_pos : right )})`);
+
+
+            for (let j = left + 1; j <= right; j++) {
+                highlightCodeLine(7); 
+                createOrUpdatePointer('j', j, `j (${j})`);
+                yield;
+
+                highlightCodeLine(8); 
+                // updateInfoDisplays("comparison", `A[${j}] (${currentArray[j]}) < pivotValue (${pivotValue})?`); // Removed
+                yield;
+
+                if (currentArray[j] < pivotValue) {
+                    // updateInfoDisplays("comparison", `A[${j}] (${currentArray[j]}) < ${pivotValue}. True.`); // Removed
+                    yield; 
+
+                    highlightCodeLine(9); 
+                    // updateInfoDisplays("comparison", `Swapping A[${j}] (${currentArray[j]}) with A[${i}] (${currentArray[i]})`); // Removed
+                    renderArray(currentArray, { swap: [j, i], pivotLocation: currentPivotHolderIndex }); 
+                    await delay(ANIMATION_SPEED_MS / 2); 
+                    if (j !== i) {
+                        await animateSwap(j, i);
+                        [currentArray[j], currentArray[i]] = [currentArray[i], currentArray[j]];
+                    }
+                    renderArray(currentArray, { pivotLocation: currentPivotHolderIndex }); 
+                    createOrUpdatePointer('pivot', left, `p (${left})`); 
+                    iTargetIndex = (i >= 0 && i < currentArray.length) ? i : (i === currentArray.length ? Infinity : -1);
+                    createOrUpdatePointer('i', iTargetIndex, `i (${i})`); 
+                    createOrUpdatePointer('j', j, `j (${j})`);
+                    yield;
+                    
+                    highlightCodeLine(10); 
+                    i++;
+                    iTargetIndex = (i >= 0 && i < currentArray.length) ? i : (i === currentArray.length ? Infinity : -1);
+                    createOrUpdatePointer('i', iTargetIndex, `i (${i})`);
+                    yield;
+
+                } else { 
+                    // updateInfoDisplays("comparison", `A[${j}] (${currentArray[j]}) < ${pivotValue}. False.`); // Removed
+                    yield; 
+                }
+                // updateInfoDisplays("clearComparison"); // Removed
+            }
+            
+            highlightCodeLine(7); 
+            let finalJDisplayIndex = right; 
+            if (left + 1 > right) { 
+                finalJDisplayIndex = (j_initial_pos <= right && j_initial_pos >= left) ? j_initial_pos : (right >=0 ? right : -1);
+            }
+            createOrUpdatePointer('j', finalJDisplayIndex, `j (${finalJDisplayIndex < 0 ? '-' : finalJDisplayIndex})`); 
+            yield;
+
+
+            highlightCodeLine(12); 
+            const finalPivotPosition = i - 1;
+            // updateInfoDisplays("comparison", `Placing pivot: swapping A[${left}] (${currentArray[left]}) with A[${finalPivotPosition < 0 ? '?' : finalPivotPosition}] (...)`); // Removed
+            renderArray(currentArray, { swap: [left, finalPivotPosition], pivotLocation: currentPivotHolderIndex }); 
+            await delay(ANIMATION_SPEED_MS / 2);
+
+            if (left !== finalPivotPosition && finalPivotPosition >= 0 && finalPivotPosition < currentArray.length) { 
+                await animateSwap(left, finalPivotPosition);
+                [currentArray[left], currentArray[finalPivotPosition]] = [currentArray[finalPivotPosition], currentArray[left]];
+            } else if (finalPivotPosition < 0 || finalPivotPosition >= currentArray.length) {
+                 // updateInfoDisplays("comparison", `Error: finalPivotPosition ${finalPivotPosition} is out of bounds.`); // Removed
+            }
+            currentPivotHolderIndex = finalPivotPosition; // Pivot value is now at its final spot
+            renderArray(currentArray, { pivotLocation: currentPivotHolderIndex }); 
+            createOrUpdatePointer('pivot', finalPivotPosition, `p (${finalPivotPosition})`);
+            iTargetIndex = (i >= 0 && i < currentArray.length) ? i : (i === currentArray.length ? Infinity : -1);
+            createOrUpdatePointer('i', iTargetIndex, `i (${i})`); 
+            createOrUpdatePointer('j', finalJDisplayIndex, `j (${finalJDisplayIndex < 0 ? '-' : finalJDisplayIndex})`); 
+            // updateInfoDisplays("clearComparison"); // Removed
+            yield;
+            
+            highlightCodeLine(13); 
+            yield; 
+
+            highlightCodeLine(-1); 
+            // updateInfoDisplays("pivotVal", "Partition Complete!"); // Removed
+            // updateInfoDisplays("comparison", `Final pivot position: ${finalPivotPosition}`); // Removed
+            return finalPivotPosition;
+        }
+
+        async function advanceStep() {
+            if (!animationInProgress || !partitionGeneratorInstance) return;
+
+            stepForwardBtn.disabled = true; 
+            const result = await partitionGeneratorInstance.next();
+            stepForwardBtn.disabled = false; 
+
+            if (result.done) {
+                animationInProgress = false;
+                stepForwardBtn.classList.add('hidden');
+                runPartitionBtn.disabled = false; 
+                runPartitionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function runPartition() {
+            if (animationInProgress) return;
+            animationInProgress = true;
+            
+            runPartitionBtn.disabled = true;
+            runPartitionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            resetButton.classList.remove('hidden');
+            stepForwardBtn.classList.remove('hidden');
+            stepForwardBtn.disabled = false;
+
+            const initialData = generateRandomArray(DEFAULT_ARRAY_SIZE, RANDOM_NUMBER_MIN, RANDOM_NUMBER_MAX);
+            const pivotIdx = Math.floor(Math.random() * initialData.length); 
+            const l = 0;
+            const r = initialData.length - 1;
+
+            currentArray = [...initialData]; 
+            // updateInfoDisplays("clearPivotVal"); // Removed
+            // updateInfoDisplays("clearComparison"); // Removed
+            
+            Object.values(pointerDOMElements).forEach(el => el.remove()); 
+            pointerDOMElements = {}; 
+
+            partitionGeneratorInstance = partitionStepGenerator(currentArray, pivotIdx, l, r);
+            advanceStep(); 
+        }
+        
+        function resetState() {
+            animationInProgress = false; 
+            partitionGeneratorInstance = null;
+            currentPivotHolderIndex = -1;
+            
+            const newInitialData = generateRandomArray(DEFAULT_ARRAY_SIZE, RANDOM_NUMBER_MIN, RANDOM_NUMBER_MAX);
+            currentArray = [...newInitialData]; 
+            renderArray(currentArray); // Render without specific pivot highlight initially
+            
+            Object.values(pointerDOMElements).forEach(el => el.remove());
+            pointerDOMElements = {};
+
+            highlightCodeLine(-1);
+            // updateInfoDisplays("clearPivotVal"); // Removed
+            // updateInfoDisplays("clearComparison"); // Removed
+            updateInfoDisplays("clearInitialArgs");
+
+
+            runPartitionBtn.disabled = false;
+            runPartitionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            resetButton.classList.add('hidden');
+            stepForwardBtn.classList.add('hidden');
+        }
+
+        runPartitionBtn.addEventListener('click', runPartition);
+        stepForwardBtn.addEventListener('click', advanceStep);
+        resetButton.addEventListener('click', resetState);
+
+        renderPseudocode();
+        resetState(); 
+    </script>
+</body>
+</html>
