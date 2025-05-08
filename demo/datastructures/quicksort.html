@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickSort</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .array-element {
+            width: 55px; 
+            height: 55px;
+            border: 2px solid #718096; /* gray-500 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem; /* text-lg */
+            font-weight: bold;
+            margin: 0 3px;
+            border-radius: 0.375rem; /* rounded-md */
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, color 0.5s ease-in-out;
+            background-color: #E2E8F0; /* gray-200 default */
+            color: #2D3748; /* gray-800 default */
+        }
+        .left-partition {
+            background-color: #C3DAFE; /* blue-200 */
+            border-color: #60A5FA; /* blue-400 */
+            color: #1E3A8A; /* blue-800 */
+        }
+        .pivot-element {
+            background-color: #FDE68A; /* yellow-300 */
+            border-color: #F59E0B; /* amber-500 */
+            color: #78350F; /* amber-800 */
+            font-weight: bolder;
+        }
+        .right-partition {
+            background-color: #D1FAE5; /* green-200 */
+            border-color: #34D399; /* green-400 */
+            color: #065F46; /* green-800 */
+        }
+        .sorted-segment { /* For segments that are fully sorted (e.g., base case of recursion) */
+            background-color: #E5E7EB; /* gray-200 - slightly different or a checkmark */
+            border-color: #9CA3AF; /* gray-400 */
+        }
+        .code-line {
+            padding: 3px 6px;
+            margin-bottom: 1px;
+            border-radius: 0.25rem; /* rounded-sm */
+            transition: background-color 0.3s;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem; 
+            white-space: pre; 
+        }
+        .highlight-code {
+            background-color: #FEF3C7; /* amber-100 */
+            border-left: 3px solid #F59E0B; /* amber-500 */
+        }
+        .info-box {
+            padding: 10px;
+            border: 1px solid #D1D5DB; /* gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #F9FAFB; /* gray-50 */
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            color: #374151; /* gray-700 */
+            min-height: 60px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-6">
+    <div class="container mx-auto">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">QuickSort Algorithm</h1>
+
+        <div class="mb-6">
+            <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-2"> </h2>
+            <div id="array-container" class="flex flex-wrap justify-center items-end relative min-h-[70px]">
+                </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-2">Pseudocode:</h2>
+                <ul id="pseudocode-container" class="bg-gray-50 p-2 rounded-md shadow text-xs">
+                    </ul>
+            </div>
+            <div>
+                <div class="info-box">
+                    <div id="info-text-line1"></div>
+                    <div id="info-text-line2" class="mt-1"></div>
+                </div>
+                <div class="flex flex-col space-y-2 mt-4">
+                    <button id="start-sort-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg transition duration-150 ease-in-out text-sm">
+                        Start QuickSort
+                    </button>
+                    <button id="next-step-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition duration-150 ease-in-out hidden text-sm">
+                        Next Step
+                    </button>
+                     <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg transition duration-150 ease-in-out hidden text-sm">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const arrayContainer = document.getElementById('array-container');
+        const pseudocodeContainer = document.getElementById('pseudocode-container');
+        const startSortBtn = document.getElementById('start-sort-btn');
+        const nextStepBtn = document.getElementById('next-step-btn');
+        const resetButton = document.getElementById('reset-btn');
+        const infoTextLine1 = document.getElementById('info-text-line1');
+        const infoTextLine2 = document.getElementById('info-text-line2');
+
+        const DEFAULT_ARRAY_SIZE = 10;
+        const RANDOM_NUMBER_MIN = 1;
+        const RANDOM_NUMBER_MAX = 100;
+
+        const pseudocode = [
+            /*0*/ "Function QuickSort(A, left, right)",
+            /*1*/ "    if left ≥ right then",
+            /*2*/ "        return",
+            /*3*/ "    pIndex ← ChoosePivot(A, left, right)",
+            /*4*/ "    pivotPos ← Partition(A, pIndex, left, right)",
+            /*5*/ "    QuickSort(A, left, pivotPos - 1)",
+            /*6*/ "    QuickSort(A, pivotPos + 1, right)",
+            /*7*/ "End Function"
+        ];
+
+        let currentArrayData = []; // Stores the logical array
+        let animationInProgress = false;
+        let quickSortGeneratorInstance = null;
+        
+        // To keep track of segments being processed for coloring
+        let activeSegments = []; 
+
+
+        function generateRandomArray(size, min, max) {
+            const arr = [];
+            for (let k = 0; k < size; k++) {
+                arr.push(Math.floor(Math.random() * (max - min + 1)) + min);
+            }
+            return arr;
+        }
+
+        function renderPseudocode() {
+            pseudocodeContainer.innerHTML = '';
+            pseudocode.forEach((line, index) => {
+                const li = document.createElement('li');
+                li.textContent = line;
+                li.classList.add('code-line');
+                li.id = `code-line-${index}`;
+                pseudocodeContainer.appendChild(li);
+            });
+        }
+
+        let lastHighlightedLine = -1;
+        function highlightCodeLine(lineNumber) {
+            if (lastHighlightedLine !== -1 && document.getElementById(`code-line-${lastHighlightedLine}`)) {
+                document.getElementById(`code-line-${lastHighlightedLine}`).classList.remove('highlight-code');
+            }
+            const lineEl = document.getElementById(`code-line-${lineNumber}`);
+            if (lineEl) {
+                lineEl.classList.add('highlight-code');
+                lineEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                lastHighlightedLine = lineNumber;
+            } else {
+                lastHighlightedLine = -1;
+            }
+        }
+        
+        function updateInfo(line1, line2 = "") {
+            infoTextLine1.textContent = line1;
+            infoTextLine2.textContent = line2;
+        }
+
+        function renderArray(arrData, segments) {
+            arrayContainer.innerHTML = '';
+            arrData.forEach((value, index) => {
+                const element = document.createElement('div');
+                element.classList.add('array-element');
+                element.textContent = value;
+
+                // Determine segment for coloring
+                let colored = false;
+                for (const seg of segments) {
+                    if (index >= seg.left && index <= seg.right) {
+                        if (seg.pivotPos === -1 && seg.isBaseCase) { // Base case, segment is sorted or single element
+                             element.classList.add('sorted-segment');
+                        } else if (index === seg.pivotPos) {
+                            element.classList.add('pivot-element');
+                        } else if (index < seg.pivotPos) {
+                            element.classList.add('left-partition');
+                        } else { // index > seg.pivotPos
+                            element.classList.add('right-partition');
+                        }
+                        colored = true;
+                        break; 
+                    }
+                }
+                if (!colored && arrData.every((val, idx) => idx === 0 || val >= arrData[idx-1]) && segments.length === 0 && animationInProgress === false) {
+                    // If array is fully sorted and no active segments (end state)
+                    element.classList.add('pivot-element'); // Color all as pivot/sorted
+                }
+                arrayContainer.appendChild(element);
+            });
+        }
+
+        // Non-animated Partition function (Lomuto)
+        function partition(A, pIndex, left, right) {
+            const pivotValue = A[pIndex];
+            // Swap pivot to the end for Hoare-like, or to start for Lomuto. Let's use Lomuto.
+            [A[pIndex], A[left]] = [A[left], A[pIndex]]; // Move pivot to start
+            
+            let storeIndex = left + 1;
+            for (let i = left + 1; i <= right; i++) {
+                if (A[i] < pivotValue) {
+                    [A[i], A[storeIndex]] = [A[storeIndex], A[i]];
+                    storeIndex++;
+                }
+            }
+            [A[left], A[storeIndex - 1]] = [A[storeIndex - 1], A[left]]; // Move pivot to its final place
+            return storeIndex - 1;
+        }
+        
+        // ChoosePivot: for simplicity, always choose the middle element of the current range
+        function choosePivot(A, left, right) {
+            return Math.floor(left + (right - left) / 2);
+        }
+
+        async function* quickSortGenerator(A_orig, initialLeft, initialRight, depth = 0) {
+            let A = [...A_orig]; // Work on a copy for each recursive context if needed, or modify in place
+                                 // For this visualization, we'll modify currentArrayData in place.
+            
+            activeSegments.push({left: initialLeft, right: initialRight, pivotPos: -1, isBaseCase: false, depth: depth});
+            yield { codeLine: 0, message1: `QuickSort(A, ${initialLeft}, ${initialRight})`, message2:`Depth: ${depth}`};
+            renderArray(currentArrayData, activeSegments);
+
+            if (initialLeft >= initialRight) {
+                highlightCodeLine(1); // "if left >= right then"
+                yield { codeLine: 1, message1: `Base case: left (${initialLeft}) >= right (${initialRight}).`, message2: "Sub-array is sorted."};
+                activeSegments = activeSegments.filter(s => !(s.left === initialLeft && s.right === initialRight && s.depth === depth));
+                // Mark this segment as base case / sorted for rendering
+                 activeSegments.push({left: initialLeft, right: initialRight, pivotPos: -1, isBaseCase: true, depth: depth});
+                renderArray(currentArrayData, activeSegments);
+                 activeSegments = activeSegments.filter(s => !(s.left === initialLeft && s.right === initialRight && s.depth === depth && s.isBaseCase));
+
+
+                highlightCodeLine(2); // "return"
+                yield { codeLine: 2, message1: `Returning from QuickSort(${initialLeft}, ${initialRight}).`};
+                return;
+            }
+            
+            // Update segment for rendering before choosing pivot
+            activeSegments = activeSegments.filter(s => !(s.left === initialLeft && s.right === initialRight && s.depth === depth));
+            activeSegments.push({left: initialLeft, right: initialRight, pivotPos: -1, isBaseCase: false, depth: depth});
+            renderArray(currentArrayData, activeSegments);
+
+            highlightCodeLine(3); // "pIndex ← ChoosePivot(...)"
+            const pIndex = choosePivot(currentArrayData, initialLeft, initialRight);
+            yield { codeLine: 3, message1: `Chosen pivot index pIndex = ${pIndex} (value: ${currentArrayData[pIndex]})`, message2: `For range [${initialLeft}, ${initialRight}]`};
+            
+            // Update segment with chosen pivot for rendering
+            activeSegments = activeSegments.filter(s => !(s.left === initialLeft && s.right === initialRight && s.depth === depth));
+            activeSegments.push({left: initialLeft, right: initialRight, pivotPos: pIndex, isBaseCase: false, depth: depth}); // Show pivot pre-partition
+            renderArray(currentArrayData, activeSegments);
+            yield { codeLine: 3, message1: `Pivot chosen. Ready to partition.`};
+
+
+            highlightCodeLine(4); // "pivotPos ← Partition(...)"
+            const pivotPos = partition(currentArrayData, pIndex, initialLeft, initialRight); // Modifies currentArrayData in place
+            
+            // Update segment to show result of partition
+            activeSegments = activeSegments.filter(s => !(s.left === initialLeft && s.right === initialRight && s.depth === depth));
+            activeSegments.push({left: initialLeft, right: initialRight, pivotPos: pivotPos, isBaseCase: false, depth: depth});
+            renderArray(currentArrayData, activeSegments); // Render with Left, Pivot, Right colors
+            yield { codeLine: 4, message1: `Partitioned around pivot value ${currentArrayData[pivotPos]}.`, message2: `New pivot position: ${pivotPos}`};
+            
+            activeSegments = activeSegments.filter(s => !(s.left === initialLeft && s.right === initialRight && s.depth === depth)); // Remove the current broad segment
+
+            highlightCodeLine(5); // "QuickSort(A, left, pivotPos - 1)"
+            // Before recursing, ensure the parent segment's partition is shown
+            renderArray(currentArrayData, [{left: initialLeft, right: initialRight, pivotPos: pivotPos, isBaseCase: false, depth:depth}]);
+            yield { codeLine: 5, message1: `Calling QuickSort for left part: [${initialLeft}, ${pivotPos - 1}]`};
+            yield* quickSortGenerator(currentArrayData, initialLeft, pivotPos - 1, depth + 1);
+            
+            // After left recursion returns, re-show current segment's state
+            renderArray(currentArrayData, [{left: initialLeft, right: initialRight, pivotPos: pivotPos, isBaseCase: false, depth:depth}]);
+             highlightCodeLine(5); // Re-highlight line 5 to show we've returned from left call
+            yield { codeLine: 5, message1: `Returned from QuickSort(left, ${pivotPos - 1})`};
+
+
+            highlightCodeLine(6); // "QuickSort(A, pivotPos + 1, right)"
+            renderArray(currentArrayData, [{left: initialLeft, right: initialRight, pivotPos: pivotPos, isBaseCase: false, depth:depth}]);
+            yield { codeLine: 6, message1: `Calling QuickSort for right part: [${pivotPos + 1}, ${initialRight}]`};
+            yield* quickSortGenerator(currentArrayData, pivotPos + 1, initialRight, depth + 1);
+
+            renderArray(currentArrayData, [{left: initialLeft, right: initialRight, pivotPos: pivotPos, isBaseCase: false, depth:depth}]);
+            highlightCodeLine(6); // Re-highlight line 6
+            yield { codeLine: 6, message1: `Returned from QuickSort(${pivotPos + 1}, right)`};
+            
+            highlightCodeLine(7); // "End Function"
+            yield { codeLine: 7, message1: `QuickSort(${initialLeft}, ${initialRight}) completed.`};
+        }
+
+
+        async function advanceStep() {
+            if (!animationInProgress || !quickSortGeneratorInstance) return;
+
+            nextStepBtn.disabled = true;
+            const { value, done } = await quickSortGeneratorInstance.next();
+            
+            if (done) {
+                animationInProgress = false;
+                nextStepBtn.classList.add('hidden');
+                startSortBtn.disabled = false;
+                startSortBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                highlightCodeLine(-1); // Clear highlight
+                updateInfo("QuickSort Complete! Array is sorted.", `Final array: [${currentArrayData.join(', ')}]`);
+                activeSegments = []; // Clear active segments
+                renderArray(currentArrayData, activeSegments); // Render final sorted array
+                return;
+            }
+            
+            nextStepBtn.disabled = false; // Re-enable for next step
+
+            const { codeLine, message1, message2 } = value;
+            // currentArrayData is modified in-place by partition, and generator works with it.
+            // renderArray inside the generator handles visual updates.
+            highlightCodeLine(codeLine);
+            updateInfo(message1, message2);
+        }
+
+        function startNewSort() {
+            if (animationInProgress) return;
+            animationInProgress = true;
+            
+            startSortBtn.hidden = true;
+            resetButton.classList.remove('hidden');
+            nextStepBtn.classList.remove('hidden');
+            nextStepBtn.disabled = true; // Will be enabled by advanceStep after first yield
+
+            currentArrayData = generateRandomArray(DEFAULT_ARRAY_SIZE, RANDOM_NUMBER_MIN, RANDOM_NUMBER_MAX);
+            activeSegments = [];
+            renderArray(currentArrayData, activeSegments); // Render initial unsorted array
+
+            quickSortGeneratorInstance = quickSortGenerator(currentArrayData, 0, currentArrayData.length - 1);
+            advanceStep(); // Perform the first step automatically
+        }
+        
+        function resetState() {
+            animationInProgress = false; 
+            quickSortGeneratorInstance = null;
+            activeSegments = [];
+            
+            currentArrayData = generateRandomArray(DEFAULT_ARRAY_SIZE, RANDOM_NUMBER_MIN, RANDOM_NUMBER_MAX);
+            renderArray(currentArrayData, activeSegments); 
+            
+            highlightCodeLine(-1);
+            updateInfo('Click "Start QuickSort" to begin.');
+            
+            startSortBtn.hidden = false;
+            resetButton.classList.add('hidden');
+            nextStepBtn.classList.add('hidden');
+            nextStepBtn.disabled = true;
+        }
+
+        startSortBtn.addEventListener('click', startNewSort);
+        nextStepBtn.addEventListener('click', advanceStep);
+        resetButton.addEventListener('click', resetState);
+
+        renderPseudocode();
+        resetState(); 
+    </script>
+</body>
+</html>
