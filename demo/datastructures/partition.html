@@ -72,7 +72,7 @@
         <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-6">QuickSort In-Place Partition</h1>
 
         <div class="mb-6">
-            <h2 class="text-lg md:text-xl font-semibold text-gray-600 mb-2">Array:</h2>
+            <h2 class="text-lg md:text-xl font-semibold text-gray-600 mb-2"></h2>
             <div id="array-container" class="flex justify-center items-end relative h-24">
                 </div>
             <div id="pointers-container-above" class="relative h-20 w-full"> </div>
@@ -432,8 +432,8 @@
             if (result.done) {
                 animationInProgress = false;
                 stepForwardBtn.classList.add('hidden');
-                runPartitionBtn.disabled = false; 
-                runPartitionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                runPartitionBtn.hidden = false; 
+                //runPartitionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
 
@@ -441,8 +441,8 @@
             if (animationInProgress) return;
             animationInProgress = true;
             
-            runPartitionBtn.disabled = true;
-            runPartitionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            runPartitionBtn.hidden = true;
+            //runPartitionBtn.classList.add('opacity-50', 'cursor-not-allowed');
             resetButton.classList.remove('hidden');
             stepForwardBtn.classList.remove('hidden');
             stepForwardBtn.disabled = false;
