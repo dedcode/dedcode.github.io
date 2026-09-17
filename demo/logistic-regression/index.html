@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build a labeled dataset, explore total logistic regression loss, and follow a single prediction from position to probability and loss.">
+  <title>Logistic Regression Explorer</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./charts.css">
+  <script src="./vendor/d3.v7.9.0.min.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+<main id="logistic-explorer" data-step="1">
+  <h1>Logistic regression, step by step</h1>
+  <nav class="step-navigation" aria-label="Teaching steps">
+    <button type="button" class="btn step-button" data-step="1" aria-current="step">1. Place points</button>
+    <button type="button" class="btn step-button" data-step="2" disabled>2. Explore total loss</button>
+    <button type="button" class="btn step-button" data-step="3" disabled>3. Inspect one point</button>
+  </nav>
+  <header class="step-introduction">
+    <h2 id="step-heading">1. Build the dataset</h2>
+    <p id="step-description">Choose a true label, then click the instance space to add points. Add at least one point to continue.</p>
+  </header>
+  <div class="lesson-layout">
+    <section class="instance-space" aria-labelledby="position-heading">
+      <h3 id="position-heading">Instance space</h3>
+      <div class="space-caption text-small" id="space-caption">● y = 1 · ■ y = 0</div>
+      <svg class="plot" id="position-plot" role="img" aria-label="Empty instance space. Click to add a labeled training point, or use the coordinate fields below."></svg>
+      <div id="placement-controls">
+        <div class="viz-controls">
+          <span>New point label</span>
+          <button type="button" class="btn" id="training-one" aria-pressed="true">● y = 1</button>
+          <button type="button" class="btn" id="training-zero" aria-pressed="false">■ y = 0</button>
+        </div>
+        <form id="training-form">
+          <div class="coordinates">
+            <label class="form-label">New x₁ <input class="form-control" id="training-x1" type="number" min="-3" max="3" step="any" value="1" required></label>
+            <label class="form-label">New x₂ <input class="form-control" id="training-x2" type="number" min="-3" max="3" step="any" value="0.5" required></label>
+            <button type="submit" class="btn">Add point</button>
+          </div>
+        </form>
+      </div>
+      <div id="line-controls" hidden>
+        <label class="form-label">Line angle: <output id="angle-value" class="tabular-nums">−45°</output>
+          <input class="form-range" id="line-angle" type="range" min="-180" max="180" step="1" value="-45">
+        </label>
+        <label class="form-label">Line offset: <output id="offset-value" class="tabular-nums">0.00</output>
+          <input class="form-range" id="line-offset" type="range" min="-2.5" max="2.5" step="0.05" value="0">
+        </label>
+      </div>
+      <div id="probe-controls" hidden>
+        <div class="readout tabular-nums"><span id="selected-score-label">Selected-class score s</span> = <strong id="score-value"></strong></div>
+        <div class="coordinates">
+          <label class="form-label">Copy x₁ <input class="form-control" id="feature-one" type="number" min="-3" max="3" step="any" value="1"></label>
+          <label class="form-label">Copy x₂ <input class="form-control" id="feature-two" type="number" min="-3" max="3" step="any" value="0.5"></label>
+        </div>
+        <div class="detail text-small tabular-nums" id="distance-value"></div>
+      </div>
+    </section>
+    <div class="lesson-detail">
+      <section id="dataset-panel" aria-labelledby="dataset-heading">
+        <h3 id="dataset-heading">Your training set</h3>
+        <p class="text-small" id="dataset-count">0 points</p>
+        <div id="loss-summary" hidden>
+          <div class="total-label">Total training loss · Σ Lᵢ</div>
+          <output class="total-value tabular-nums" id="total-loss">0.0000</output>
+          <p class="text-small">Each row contributes to this sum. Move the line and compare.</p>
+        </div>
+        <div class="table-responsive training-table-scroll" role="region" aria-label="Scrollable training points table" tabindex="0">
+          <table class="table table-sm tabular-nums">
+            <caption class="sr-only" id="table-caption">Labeled training points</caption>
+            <thead id="training-header"></thead>
+            <tbody id="training-rows"></tbody>
+          </table>
+        </div>
+      </section>
+      <section id="inspection-panel" aria-labelledby="inspection-heading" hidden>
+        <h3 id="inspection-heading">Follow one prediction</h3>
+        <div class="inspection-selection">
+          <label class="form-label">Training point
+            <select class="form-control" id="point-select" aria-label="Training point to inspect"></select>
+          </label>
+          <button type="button" class="btn" id="reset-copy">Return copy to original</button>
+        </div>
+        <p id="copy-description" class="text-small"></p>
+        <div class="true-class-summary">
+          <div id="true-class-label"></div>
+          <strong class="true-class-value tabular-nums" id="true-class-value"></strong>
+          <div id="true-class-loss" class="text-small tabular-nums"></div>
+        </div>
+        <div class="computation-plots">
+          <section aria-labelledby="probability-heading">
+            <h3 id="probability-heading">Score → selected class</h3>
+            <div class="text-small" id="probability-formula">q = 1 / (1 + e<sup>−s</sup>)</div>
+            <div class="readout tabular-nums"><span id="selected-probability-label"></span> = <strong id="probability-value"></strong></div>
+            <div class="readout tabular-nums"><span id="other-probability-label"></span> = <strong id="other-probability-value"></strong></div>
+            <svg class="plot" id="probability-plot" role="img" aria-label="Sigmoid maps the selected-class score to the probability of the selected class"></svg>
+          </section>
+          <section aria-labelledby="loss-heading">
+            <h3 id="loss-heading">Probability → loss</h3>
+            <div class="text-small" id="loss-formula"></div>
+            <div class="readout tabular-nums">Copy loss = <strong id="loss-value"></strong></div>
+            <div class="readout text-small" id="loss-explanation"></div>
+            <svg class="plot" id="loss-plot" role="img" aria-label="Log loss of the exploration copy for its fixed true label"></svg>
+          </section>
+        </div>
+        <div class="text-small tabular-nums detail" id="logodds-value"></div>
+        <div class="training-context">
+          <div id="original-loss" class="text-small tabular-nums"></div>
+          <div id="inspection-total" class="text-small tabular-nums"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <footer class="step-footer">
+    <button type="button" class="btn" id="previous-step" hidden>Back</button>
+    <button type="button" class="btn" id="next-step" disabled>Next: explore total loss →</button>
+  </footer>
+  <div class="sr-only" id="accessible-status" aria-live="polite"></div>
+  <noscript>This visualization needs JavaScript enabled in your browser.</noscript>
+</main>
+</body>
+</html>
