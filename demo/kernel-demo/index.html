@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; object-src 'none'">
+<title>Feature Space Explorer</title>
+<meta name="description" content="Two interactive demos show how nonlinear features make classes linearly separable: square a line, or lift a 2D cloud into a 3D hill.">
+<meta name="theme-color" content="#ffffff">
+<style>:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 10px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover,
+.nav-link:not(:disabled):not([aria-disabled="true"]):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed="true"],
+  [aria-selected="true"],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, var(--font-size-normal));
+  }
+
+  .form-control[type="file"]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type="color"] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type="date"],
+    [type="datetime-local"],
+    [type="month"],
+    [type="time"],
+    [type="week"]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: "";
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  .form-range::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+
+  .form-range::-moz-range-track {
+    height: 44px;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    margin-top: 12px;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html>body{padding:0}</style>
+</head>
+<body>
+<main id="feature-explorer">
+  <header class="site-intro">
+    <p class="eyebrow">An interactive machine learning explainer</p>
+    <h1>Change the space.<br>Find the boundary.</h1>
+    <p class="site-deck">Explore how a new feature can turn a difficult separation into a simple one.</p>
+  </header>
+  <nav class="demo-tabs" role="tablist" aria-label="Choose a feature transformation">
+    <button type="button" id="line-tab" role="tab" aria-controls="line-panel" aria-selected="true" tabindex="0"><span class="tab-number">01</span><span>Points on a line</span></button>
+    <button type="button" id="hill-tab" role="tab" aria-controls="hill-panel" aria-selected="false" tabindex="-1"><span class="tab-number">02</span><span>A 2D cloud in 3D</span></button>
+  </nav>
+  <section id="line-panel" class="demo-panel" role="tabpanel" aria-labelledby="line-tab">
+    <p class="demo-intro">A single cutoff cannot isolate the middle points from both ends. Switch to the squared feature to see what changes.</p>
+    <div id="square-demo">
+  <h3>Square to separate</h3>
+  <div class="viz-row" aria-label="Feature space">
+    <button type="button" class="btn" data-mode="original" aria-pressed="true">1 · Original x</button>
+    <button type="button" class="btn" data-mode="lifted" aria-pressed="false">2 · Lift to (x, x²)</button>
+    <button type="button" class="btn" data-mode="squared" aria-pressed="false">3 · Squared x²</button>
+  </div>
+  <div class="sq-legend text-small"><span><i class="sq-zero"></i>Class 0 · middle</span><span><i class="sq-one"></i>Class 1 · outer</span><span>× misclassified</span></div>
+  <div class="sq-plot"><svg class="sq-svg" role="img" aria-label="Binary classification points and an adjustable linear separator"></svg></div>
+  <div class="viz-controls">
+    <label class="form-label">Separator <span class="sq-boundary tabular-nums"></span><input class="form-range sq-threshold" type="range" min="-4.1" max="4.1" step="0.01" value="1.6"></label>
+    <button class="btn sq-best" type="button">Best cutoff</button>
+  </div>
+  <div class="sq-result tabular-nums" aria-live="polite"></div>
+  <details class="sq-editor">
+    <summary>Edit points</summary>
+    <div class="viz-controls">
+      <label class="form-label">Point<select class="form-select sq-select" aria-label="Point to move"></select></label>
+      <label class="form-label">Position x <span class="sq-value tabular-nums"></span><input class="form-range sq-position" type="range" min="-4" max="4" step="0.01" value="-3.7"></label>
+    </div>
+  </details>
+  <span class="sr-only">Drag points to move them, or use Edit points. Drag the dashed separator or use its slider. A cross marks a misclassified point.</span>
+</div>
+<style>
+#square-demo { width:100%; }
+#square-demo .sq-legend { display:flex;flex-wrap:wrap;gap:16px;margin-top:16px; }
+#square-demo .sq-legend span { display:inline-flex;align-items:center;gap:6px; }
+#square-demo .sq-legend i { display:inline-block;width:10px;height:10px; }
+#square-demo .sq-zero { background:var(--viz-series-1);border-radius:50%; }
+#square-demo .sq-one { background:var(--viz-series-2); }
+#square-demo .sq-svg { display:block;width:100%;height:310px;overflow:visible;touch-action:none; }
+#square-demo .sq-svg text { fill:var(--foreground);font-size:12px; }
+#square-demo .sq-editor { margin-top:14px; }
+#square-demo .sq-result { margin-top:8px; }
+#square-demo summary { cursor:pointer; }
+#square-demo .sq-mark { cursor:ew-resize; }
+#square-demo .sq-line-hit { cursor:ew-resize; }
+#square-demo .sq-editor .viz-controls { margin-top:10px; }
+</style>
+<script>
+(() => {
+ const root=document.getElementById('square-demo');
+ const svg=root.querySelector('.sq-svg'), threshold=root.querySelector('.sq-threshold');
+ const select=root.querySelector('.sq-select'), position=root.querySelector('.sq-position');
+ const points=[-3.7,-3,-2.4,-.9,-.3,.4,1,2.3,3.1,3.8].map((x,i)=>({x,c:i<3||i>6?1:0,id:i+1}));
+ let mode='original', cutoff=1.6, direction=1, selected=0, geometry, drag=null, frame=0, animatedPixels=null, lastPixels=[];
+ let shown=points.map(p=>({a:p.x,b:0}));
+ const NS='http://www.w3.org/2000/svg';
+ const el=(tag,attrs={},parent=svg)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);parent.appendChild(n);return n;};
+ const label=(x,y,value,attrs={})=>{const n=el('text',{x,y,...attrs});n.textContent=value;return n;};
+ const feature=p=>mode==='original'?p.x:p.x*p.x;
+ const error=(t,d)=>points.filter(p=>(d===1?feature(p)>=t:feature(p)<=t)!==Boolean(p.c)).length;
+ function optimum(){
+   const vals=[...new Set(points.map(feature))].sort((a,b)=>a-b);
+   const candidates=[vals[0]-.01,...vals.slice(1).map((v,i)=>(v+vals[i])/2),vals[vals.length-1]+.01];
+   let best={n:Infinity,t:cutoff,d:direction};
+   for(const t of candidates)for(const d of [1,-1]){const n=error(t,d);if(n<best.n)best={n,t,d};}
+   return best;
+ }
+ function updateText(){
+   const n=error(cutoff,direction), best=optimum();
+   const f=mode==='original'?'x':'x²';
+   root.querySelector('.sq-boundary').textContent=`${f} = ${cutoff.toFixed(2)}`;
+   root.querySelector('.sq-result').textContent=`${n} / ${points.length} errors · Best cutoff: ${best.n} · Class 1: ${f} ${direction===1?'≥':'≤'} ${cutoff.toFixed(2)}`;
+   svg.setAttribute('aria-label',`${mode} feature space. ${n} of ${points.length} points misclassified. Best possible cutoff has ${best.n} errors.`);
+   root.querySelector('.sq-value').textContent=points[selected].x.toFixed(2);
+   position.value=points[selected].x;
+ }
+ function draw(){
+   const w=Math.max(280,root.querySelector('.sq-plot').getBoundingClientRect().width),h=310;
+   svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.replaceChildren();
+   const left=64,right=w-18,top=25,bottom=255;
+   const square=mode==='squared', lifted=mode==='lifted';
+   const xDomain=square?[-.9,17.4]:[-4.5,4.5],yDomain=[-1.2,17.4];
+   const X=x=>left+12+(x-xDomain[0])/(xDomain[1]-xDomain[0])*(right-left-24);
+   const Y=y=>bottom-12-(y-yDomain[0])/(yDomain[1]-yDomain[0])*(bottom-top-24);
+   const baseline=lifted?Y(0):top+(bottom-top)/2;
+   const pointY=b=>lifted?Y(b):baseline;
+   geometry={X,Y,baseline,left,right,top,bottom,invertX:x=>xDomain[0]+(x-left-12)/(right-left-24)*(xDomain[1]-xDomain[0]),invertY:y=>yDomain[0]+(bottom-12-y)/(bottom-top-24)*(yDomain[1]-yDomain[0])};
+   el('rect',{x:left,y:top,width:right-left,height:bottom-top,fill:'none',stroke:'var(--border)','data-chart-frame':''});
+   if(lifted){
+     for(const t of [0,4,8,12,16]){el('line',{x1:left,y1:Y(t),x2:right,y2:Y(t),stroke:'var(--border)'});label(left-10,Y(t)+4,t,{'text-anchor':'end'});}
+     label(19,(top+bottom)/2,'x²',{'class':'axis-title','data-axis':'y'});
+     let path='';for(let i=0;i<=100;i++){const x=-4+8*i/100;path+=`${i?'L':'M'}${X(x)},${Y(x*x)} `;}
+     el('path',{d:path,fill:'none',stroke:'var(--border)','stroke-width':2});
+   }else{
+     label(16,baseline+4,'Points',{'class':'axis-title','data-axis':'y'});
+   }
+   el('line',{x1:left,y1:baseline,x2:right,y2:baseline,stroke:'var(--border)'});
+   const ticks=square?(w<430?[0,8,16]:[0,4,8,12,16]):(w<430?[-4,0,4]:[-4,-2,0,2,4]);
+   ticks.forEach(t=>{el('line',{x1:X(t),x2:X(t),y1:bottom,y2:bottom+5,stroke:'var(--border)'});label(X(t),bottom+22,t,{'text-anchor':'middle'});});
+   label((left+right)/2,301,square?'Squared feature x²':'Original feature x',{'text-anchor':'middle','class':'axis-title','data-axis':'x'});
+   const line=lifted?{x1:left,x2:right,y1:Y(cutoff),y2:Y(cutoff)}:{x1:X(cutoff),x2:X(cutoff),y1:top,y2:bottom};
+   el('line',{...line,stroke:'var(--foreground)','stroke-width':1.5,'stroke-dasharray':'6 5'});
+   const hit=el('line',{...line,stroke:'transparent','stroke-width':32,'class':'sq-line-hit','data-chart-hit':''});
+   hit.style.cursor=lifted?'ns-resize':'ew-resize';
+   hit.addEventListener('pointerdown',e=>startDrag(e,'line'));
+   lastPixels=[];
+   points.forEach((p,i)=>{
+     const v=shown[i],x=animatedPixels?animatedPixels[i].x:X(v.a),y=animatedPixels?animatedPixels[i].y:pointY(v.b), color=p.c?'var(--viz-series-2)':'var(--viz-series-1)';
+     lastPixels.push({x,y});
+     const group=el('g',{'class':'sq-mark','data-point':i});
+     if(p.c)el('rect',{x:x-6,y:y-6,width:12,height:12,fill:color},group);
+     else el('circle',{cx:x,cy:y,r:6,fill:color},group);
+     const wrong=(direction===1?feature(p)>=cutoff:feature(p)<=cutoff)!==Boolean(p.c);
+     if(wrong){el('path',{d:`M${x-4},${y-20}l8,8m-8,0l8,-8`,stroke:'var(--foreground)','stroke-width':1.5,fill:'none'},group);}
+     const target=el('circle',{cx:x,cy:y,r:16,fill:'transparent','data-chart-hit':'','data-tooltip':`Point ${p.id} · class ${p.c} · x = ${p.x.toFixed(2)} · x² = ${(p.x*p.x).toFixed(2)}`},group);
+     target.addEventListener('pointerdown',e=>startDrag(e,i));
+   });
+   // Drop optional labels if a compact host cannot fit them.
+   const axisLabels=[...svg.querySelectorAll('text')];
+   axisLabels.forEach(n=>{const box=n.getBBox();if(box.x<0||box.x+box.width>w)n.setAttribute('text-anchor',box.x<0?'start':'end');});
+ }
+ function targetPoints(){return points.map(p=>({a:mode==='squared'?p.x*p.x:p.x,b:mode==='lifted'?p.x*p.x:0}));}
+ function render(animate=false){
+   cancelAnimationFrame(frame);updateText();
+   const start=lastPixels.map(p=>({...p}));shown=targetPoints();animatedPixels=null;draw();
+   if(!animate||matchMedia('(prefers-reduced-motion: reduce)').matches||!start.length)return;
+   const targets=lastPixels.map(p=>({...p})),time=performance.now();
+   function tick(now){const t=Math.min(1,(now-time)/420),e=t*t*(3-2*t);animatedPixels=targets.map((p,i)=>({x:start[i].x+(p.x-start[i].x)*e,y:start[i].y+(p.y-start[i].y)*e}));draw();if(t<1)frame=requestAnimationFrame(tick);else animatedPixels=null;}
+   frame=requestAnimationFrame(tick);
+ }
+ function startDrag(e,target){e.preventDefault();cancelAnimationFrame(frame);shown=targetPoints();drag=target;svg.setPointerCapture(e.pointerId);if(typeof target==='number'){selected=target;select.value=selected;updateText();}}
+ svg.addEventListener('pointermove',e=>{
+   if(drag===null)return;
+   const rect=svg.getBoundingClientRect(),px=e.clientX-rect.left,py=e.clientY-rect.top;
+   if(drag==='line'){
+     cutoff=mode==='lifted'?geometry.invertY(py):geometry.invertX(px);
+     cutoff=Math.max(Number(threshold.min),Math.min(Number(threshold.max),cutoff));threshold.value=cutoff;
+   }else{
+     let x=geometry.invertX(px);
+     if(mode==='squared')x=(points[drag].x<0?-1:1)*Math.sqrt(Math.max(0,x));
+     points[drag].x=Math.max(-4,Math.min(4,x));
+   }
+   render();
+ });
+ svg.addEventListener('pointerup',()=>drag=null);svg.addEventListener('pointercancel',()=>drag=null);
+ root.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
+   const next=button.dataset.mode;if(next===mode)return;
+   const previous=mode;mode=next;direction=1;
+   if(mode==='original')cutoff=1.6;else if(previous==='original')cutoff=3;
+   threshold.min=mode==='original'?-4.1:-.1;threshold.max=mode==='original'?4.1:16.1;threshold.value=cutoff;
+   root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b===button));render(true);
+ }));
+ threshold.addEventListener('input',()=>{cutoff=Number(threshold.value);render();});
+ root.querySelector('.sq-best').addEventListener('click',()=>{const best=optimum();cutoff=best.t;direction=best.d;threshold.value=cutoff;render();});
+ points.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${p.id} · Class ${p.c}`;select.appendChild(o);});
+ select.addEventListener('change',()=>{selected=Number(select.value);updateText();});
+ position.addEventListener('input',()=>{points[selected].x=Number(position.value);render();});
+ document.addEventListener('demo:shown',()=>{if(root.getBoundingClientRect().width)render();});
+ new ResizeObserver(()=>draw()).observe(root.querySelector('.sq-plot'));
+ render();
+})();
+</script>
+
+    <div class="lesson-note"><strong>Try it:</strong> select <strong>Squared x²</strong>, then move the separator. Drag a point—or use <strong>Edit points</strong>—to change the data. The crosses mark classification errors.</div>
+  </section>
+  <section id="hill-panel" class="demo-panel" role="tabpanel" aria-labelledby="hill-tab" hidden>
+    <p class="demo-intro">The outer class surrounds the central class. A new height feature raises the center so a flat plane can separate them.</p>
+    <div id="kernel-hill-demo">
+  <div class="kh-heading"><h3>Lift the center. Separate with a plane.</h3><div class="kh-legend text-small"><span><i class="kh-square"></i>Central class</span><span><i class="kh-circle"></i>Outer class</span></div></div>
+  <div class="kh-comparison">
+    <section class="kh-flat"><div class="kh-caption">Original · 2D</div><svg class="kh-chart kh-original" role="img" aria-label="Red squares clustered in the center, surrounded by green circles. A single straight line cannot separate the classes."></svg></section>
+    <div class="kh-arrow" aria-hidden="true"><span class="text-small">Nonlinear lift</span><span class="kh-arrow-glyph">⟶</span></div>
+    <section class="kh-space"><div class="kh-caption">Lifted · 3D</div><svg class="kh-chart kh-lifted" role="img" aria-label="The central red squares rise on a smooth hill, above a horizontal decision plane. The surrounding green circles remain below it."></svg></section>
+  </div>
+  <div class="viz-row kh-actions"><button type="button" class="btn btn-primary kh-play">Replay lift</button><span class="kh-status text-small" aria-live="polite">Central class above · outer class below</span></div>
+  <div class="viz-controls kh-controls">
+    <label class="form-label">Lift <output class="kh-amount tabular-nums">100%</output><input class="form-range kh-lift" type="range" min="0" max="100" step="1" value="100"></label>
+    <label class="form-label">Rotate 3D view <output class="kh-degrees tabular-nums">−32°</output><input class="form-range kh-turn" type="range" min="-180" max="180" step="1" value="-32"></label>
+  </div>
+  <span class="sr-only">This is a geometric feature-lifting illustration. A Gaussian-shaped third feature raises points near the origin. Replay the lift, scrub its progress, or rotate the right-hand plot by dragging or using its slider. The same 78 points appear in both plots.</span>
+</div>
+<style>
+#kernel-hill-demo { width:100%; }
+#kernel-hill-demo .kh-heading { display:flex;align-items:baseline;justify-content:space-between;gap:10px 22px;flex-wrap:wrap; }
+#kernel-hill-demo .kh-legend { display:flex;gap:18px;flex-wrap:wrap; }
+#kernel-hill-demo .kh-legend span { display:inline-flex;align-items:center;gap:7px; }
+#kernel-hill-demo .kh-legend i { display:inline-block;width:10px;height:10px; }
+#kernel-hill-demo .kh-square { background:var(--red); }
+#kernel-hill-demo .kh-circle { background:var(--green);border-radius:50%; }
+#kernel-hill-demo .kh-comparison { display:grid;grid-template-columns:minmax(0,1fr) 80px minmax(0,1.35fr);align-items:center;gap:0; }
+#kernel-hill-demo .kh-caption { font-weight:500;margin-top:12px; }
+#kernel-hill-demo .kh-chart { display:block;width:100%;height:400px; }
+#kernel-hill-demo .kh-chart text { fill:var(--foreground);font-size:12px; }
+#kernel-hill-demo .kh-arrow { display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center; }
+#kernel-hill-demo .kh-arrow-glyph { font-size:calc(var(--font-size-base) * 3);font-weight:400; }
+#kernel-hill-demo .kh-lifted { touch-action:none;cursor:grab; }
+#kernel-hill-demo .kh-controls { margin-top:12px; }
+#kernel-hill-demo .kh-actions { margin-top:8px; }
+@media(max-width:700px){
+ #kernel-hill-demo .kh-comparison { grid-template-columns:minmax(0,1fr); }
+ #kernel-hill-demo .kh-chart { height:310px; }
+ #kernel-hill-demo .kh-arrow { flex-direction:row;justify-content:center;gap:12px; }
+ #kernel-hill-demo .kh-arrow-glyph { transform:rotate(90deg); }
+}
+</style>
+<script>
+(() => {
+ const root=document.getElementById('kernel-hill-demo');
+ const original=root.querySelector('.kh-original'),space=root.querySelector('.kh-lifted');
+ const liftInput=root.querySelector('.kh-lift'),turnInput=root.querySelector('.kh-turn');
+ const points=[],golden=Math.PI*(3-Math.sqrt(5));
+ for(let i=0;i<30;i++){const r=.98*Math.sqrt(i/29),a=i*golden;points.push({x:r*Math.cos(a),y:r*Math.sin(a),c:1,id:i});}
+ for(let i=0;i<48;i++){const r=Math.sqrt(1.55**2+(2.5**2-1.55**2)*(i+.5)/48),a=i*golden+.35;points.push({x:r*Math.cos(a),y:r*Math.sin(a),c:0,id:i+30});}
+ const height=(x,y)=>3.2*Math.exp(-.7*(x*x+y*y));
+ const threshold=3.2*.32;
+ let lift=1,yaw=-32,drag=null,animation=0;
+ const ns='http://www.w3.org/2000/svg';
+ function node(svg,tag,attrs={}){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.appendChild(n);return n;}
+ function text(svg,x,y,value,attrs={}){const n=node(svg,'text',{x,y,...attrs});n.textContent=value;return n;}
+ function mark(svg,p,q,r){
+   if(p.c)node(svg,'rect',{x:q.x-r,y:q.y-r,width:r*2,height:r*2,fill:'var(--red)'});
+   else node(svg,'circle',{cx:q.x,cy:q.y,r,fill:'var(--green)'});
+   node(svg,'circle',{cx:q.x,cy:q.y,r:16,fill:'transparent','data-chart-hit':'','data-tooltip':`${p.c?'Central':'Outer'} point · x₁ ${p.x.toFixed(2)}, x₂ ${p.y.toFixed(2)} · mapped height ${(height(p.x,p.y)*lift).toFixed(2)}`});
+ }
+ function originalPlot(){
+   const box=original.getBoundingClientRect(),w=box.width,h=box.height;if(!w)return;
+   original.setAttribute('viewBox',`0 0 ${w} ${h}`);original.replaceChildren();
+   const side=Math.min(w-83,h-62),left=(w-side)/2+15,top=(h-side)/2-8;
+   const X=x=>left+(x+2.9)/5.8*side,Y=y=>top+(2.9-y)/5.8*side;
+   node(original,'rect',{x:left,y:top,width:side,height:side,fill:'none',stroke:'var(--border)','data-chart-frame':''});
+   node(original,'line',{x1:left,y1:top+side,x2:left+side+9,y2:top+side,stroke:'var(--foreground)','stroke-width':1.3});
+   node(original,'line',{x1:left,y1:top+side,x2:left,y2:top-9,stroke:'var(--foreground)','stroke-width':1.3});
+   for(const v of [-2,0,2]){text(original,X(v),top+side+20,v,{'text-anchor':'middle'});text(original,left-12,Y(v)+4,v,{'text-anchor':'end'});}
+   text(original,left+side/2,top+side+40,'x₁',{'text-anchor':'middle','class':'axis-title','data-axis':'x'});
+   text(original,left-32,top+side/2,'x₂',{'text-anchor':'middle','class':'axis-title','data-axis':'y'});
+   points.forEach(p=>mark(original,p,{x:X(p.x),y:Y(p.y)},w<350?3.6:4.5));
+ }
+ function liftedPlot(){
+   const box=space.getBoundingClientRect(),w=box.width,h=box.height;if(!w)return;
+   space.setAttribute('viewBox',`0 0 ${w} ${h}`);space.replaceChildren();
+   const az=yaw*Math.PI/180,el=24*Math.PI/180;
+   function rot(x,y,z){const u=x*Math.cos(az)-y*Math.sin(az),v=x*Math.sin(az)+y*Math.cos(az);return {x:u,y:-v*Math.sin(el)-z*Math.cos(el),depth:v*Math.cos(el)-z*Math.sin(el)};}
+   // Fit the actual hill plus floor, plane and axes, keeping the camera fixed during lift.
+   const bounds=[];
+   for(let i=0;i<=24;i++)for(let j=0;j<=24;j++){const x=-2.7+i*5.4/24,y=-2.7+j*5.4/24;bounds.push(rot(x,y,height(x,y)));}
+   for(const x of [-2.7,2.7])for(const y of [-2.7,2.7])bounds.push(rot(x,y,0));
+   bounds.push(rot(-2.7,2.7,3.2));
+   const minX=Math.min(...bounds.map(p=>p.x)),maxX=Math.max(...bounds.map(p=>p.x)),minY=Math.min(...bounds.map(p=>p.y)),maxY=Math.max(...bounds.map(p=>p.y));
+   const scale=Math.min((w-50)/(maxX-minX),(h-85)/(maxY-minY));
+   const cx=w/2-(minX+maxX)*scale/2,cy=(h+22)/2-(minY+maxY)*scale/2;
+   const project=(x,y,z)=>{const p=rot(x,y,z);return {x:cx+p.x*scale,y:cy+p.y*scale,depth:p.depth};};
+   function path(coords,attrs={}){return node(space,'path',{d:coords.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' '),fill:'none',stroke:'var(--border)','stroke-width':1,...attrs});}
+   function line(a,b,attrs={}){return path([project(...a),project(...b)],attrs);}
+   // Floor and axes.
+   for(let i=-5;i<=5;i++){
+     const v=i*.5;line([-2.7,v,0],[2.7,v,0],{opacity:.55});line([v,-2.7,0],[v,2.7,0],{opacity:.55});
+   }
+   line([-2.7,-2.7,0],[2.7,-2.7,0],{stroke:'var(--foreground)',opacity:.55});
+   line([-2.7,-2.7,0],[-2.7,2.7,0],{stroke:'var(--foreground)',opacity:.55});
+   line([-2.7,2.7,0],[-2.7,2.7,3.2],{stroke:'var(--foreground)',opacity:.35});
+   // A smooth wire mesh, lifted continuously from the original plane.
+   for(let i=0;i<=20;i++){
+     const v=-2.6+i*5.2/20,a=[],b=[];
+     for(let j=0;j<=50;j++){const u=-2.6+j*5.2/50;a.push(project(v,u,lift*height(v,u)));b.push(project(u,v,lift*height(u,v)));}
+     path(a,{stroke:'var(--blue)',opacity:.28});path(b,{stroke:'var(--blue)',opacity:.28});
+   }
+   const ordered=points.map(p=>({...p,q:project(p.x,p.y,lift*height(p.x,p.y)),z:lift*height(p.x,p.y)})).sort((a,b)=>b.q.depth-a.q.depth);
+   ordered.filter(p=>p.z<threshold).forEach(p=>mark(space,p,p.q,w<380?3.7:4.7));
+   // The fixed horizontal decision plane divides the lifted classes.
+   const plane=[[-1.95,-1.95],[1.95,-1.95],[1.95,1.95],[-1.95,1.95]].map(p=>project(...p,threshold));
+   node(space,'polygon',{points:plane.map(p=>`${p.x},${p.y}`).join(' '),fill:'var(--foreground)','fill-opacity':.035,stroke:'var(--foreground)','stroke-width':1.5,'stroke-opacity':.7});
+   ordered.filter(p=>p.z>=threshold).forEach(p=>mark(space,p,p.q,w<380?3.7:4.7));
+   const right=plane.reduce((a,b)=>a.x>b.x?a:b);
+   text(space,w-10,24,'Decision plane',{'text-anchor':'end'});
+   path([{x:w-42,y:33},{x:right.x+5,y:right.y-5}],{stroke:'var(--foreground)',opacity:.65});
+   const a=project(2.7,-2.7,0),b=project(-2.7,-2.7,0),z=project(-2.7,2.7,3.2);
+   text(space,a.x,a.y+18,'x₁',{'text-anchor':'middle','class':'axis-title','data-axis':'x'});
+   text(space,b.x-10,b.y+14,'x₂',{'text-anchor':'middle','class':'axis-title','data-axis':'y'});
+   text(space,z.x,z.y-10,'Height',{'text-anchor':'middle','class':'axis-title','data-axis':'z'});
+   const labels=[...space.querySelectorAll('text')];
+   for(const n of labels){const b=n.getBBox();if(b.x<4)n.setAttribute('x',Number(n.getAttribute('x'))+4-b.x);if(b.x+b.width>w-4)n.setAttribute('x',Number(n.getAttribute('x'))+w-4-b.x-b.width);}
+ }
+ function ui(announce=true){
+   liftInput.value=Math.round(lift*100);turnInput.value=yaw;
+   root.querySelector('.kh-amount').textContent=`${Math.round(lift*100)}%`;root.querySelector('.kh-degrees').textContent=`${Math.round(yaw)}°`.replace('-','−');
+   if(announce){
+     const above=points.filter(p=>p.c&&lift*height(p.x,p.y)>threshold).length;
+     root.querySelector('.kh-status').textContent=above===30?'Central class above · outer class below':`${above} of 30 central points above the plane`;
+     space.setAttribute('aria-label',`3D Gaussian-shaped feature lift at ${Math.round(lift*100)} percent. ${above} central squares above the decision plane; all 48 outer circles below.`);
+   }
+ }
+ root.querySelector('.kh-play').addEventListener('click',()=>{
+   cancelAnimationFrame(animation);lift=0;ui();liftedPlot();const start=performance.now();
+   if(matchMedia('(prefers-reduced-motion: reduce)').matches){lift=1;ui();liftedPlot();return;}
+   function tick(now){const t=Math.min(1,(now-start)/2300);lift=t*t*(3-2*t);ui(t===1);liftedPlot();if(t<1)animation=requestAnimationFrame(tick);}
+   animation=requestAnimationFrame(tick);
+ });
+ liftInput.addEventListener('input',()=>{cancelAnimationFrame(animation);lift=Number(liftInput.value)/100;ui();liftedPlot();});
+ turnInput.addEventListener('input',()=>{yaw=Number(turnInput.value);ui(false);liftedPlot();});
+ space.addEventListener('pointerdown',e=>{e.preventDefault();drag={x:e.clientX,yaw};space.setPointerCapture(e.pointerId);space.style.cursor='grabbing';});
+ space.addEventListener('pointermove',e=>{if(!drag)return;yaw=((drag.yaw+(e.clientX-drag.x)*.55+540)%360)-180;ui(false);liftedPlot();});
+ const stop=()=>{drag=null;space.style.cursor='grab';};space.addEventListener('pointerup',stop);space.addEventListener('pointercancel',stop);
+ document.addEventListener('demo:shown',()=>{if(root.getBoundingClientRect().width){originalPlot();liftedPlot();}});
+ new ResizeObserver(()=>{originalPlot();liftedPlot();}).observe(root.querySelector('.kh-comparison'));
+ ui();originalPlot();liftedPlot();
+})();
+</script>
+
+    <div class="lesson-note"><strong>Try it:</strong> replay the lift, scrub the Lift slider, or drag the right-hand view to rotate. The same points appear in both views.</div>
+  </section>
+  <details class="kernel-note">
+    <summary>Where does the kernel trick fit in?</summary>
+    <p>These demos make a nonlinear feature transformation visible. A kernel lets an algorithm calculate dot products in a feature space without explicitly constructing the transformed vectors.</p>
+    <p>For the squared line, φ(x) = x² and k(x, z) = (xz)². The hill uses the illustrative height h(x₁, x₂) = 3.2 exp[−0.7(x₁² + x₂²)] and a plane at h = 1.024. This three-dimensional picture is not the complete, infinite-dimensional feature space of a Gaussian RBF kernel.</p>
+  </details>
+  <footer class="site-footer">Feature Space Explorer <span>Two small experiments in nonlinear separation.</span></footer>
+</main>
+<div id="demo-tooltip" role="tooltip" hidden></div>
+<noscript><p class="no-script">Enable JavaScript to use the interactive demos.</p></noscript>
+<style>
+:root { --red:light-dark(#df3549,#ff6e7e);--green:light-dark(#85a527,#b1cf57);--blue:light-dark(#4a90b8,#72b3da);--font-size-base:14px; }
+html { scroll-behavior:smooth; }
+body { margin:0; }
+[hidden] { display:none !important; }
+#feature-explorer { max-width:1120px;margin:0 auto;padding:44px 28px 24px; }
+.site-intro { margin-bottom:32px; }
+.eyebrow { font-size:12px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-foreground);margin:0 0 14px; }
+#feature-explorer h1 { font-size:clamp(30px,4.4vw,48px);font-weight:500;line-height:1.12;letter-spacing:-.04em;margin:0 0 18px; }
+.site-deck { font-size:16px;max-width:610px;color:var(--muted-foreground);margin:0; }
+.demo-tabs { display:flex;gap:8px;border-bottom:1px solid var(--border);margin-bottom:22px; }
+.demo-tabs button { appearance:none;display:flex;align-items:center;gap:10px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted-foreground);padding:15px 18px;font:inherit;font-weight:500;cursor:pointer;margin-bottom:-1px; }
+.demo-tabs button[aria-selected="true"] { color:var(--foreground);border-bottom-color:var(--foreground); }
+.demo-tabs button:hover { color:var(--foreground);background:var(--muted); }
+.demo-tabs button:focus-visible { outline:2px solid var(--ring);outline-offset:3px; }
+.tab-number { opacity:.6;font-variant-numeric:tabular-nums; }
+.demo-panel { min-width:0; }
+.demo-intro { margin:0 0 24px;max-width:760px;color:var(--muted-foreground); }
+.lesson-note { color:var(--muted-foreground);border-top:1px solid var(--border);margin-top:28px;padding-top:16px;font-size:13px; }
+.lesson-note strong { color:var(--foreground);font-weight:500; }
+.kernel-note { margin-top:26px;font-size:13px;max-width:860px; }
+.kernel-note summary { cursor:pointer;font-weight:500; }
+.kernel-note p { color:var(--muted-foreground);margin:12px 0; }
+.site-footer { margin-top:36px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;color:var(--muted-foreground);font-size:12px; }
+#demo-tooltip { position:fixed;z-index:10;pointer-events:none;max-width:min(280px,calc(100vw - 24px));padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--popover);color:var(--popover-foreground);font-size:12px;box-shadow:0 4px 14px color-mix(in srgb,var(--foreground) 9%,transparent); }
+.no-script { margin:24px; }
+@media(max-width:600px){
+ #feature-explorer { padding:26px 16px 20px; }
+ .site-intro { margin-bottom:24px; }
+ .demo-tabs { gap:0; }
+ .demo-tabs button { flex:1;padding:13px 8px;gap:7px;font-size:13px; }
+ .demo-intro { margin-bottom:18px; }
+ .site-deck { font-size:14px; }
+}
+@media(prefers-reduced-motion:reduce){html { scroll-behavior:auto; }}
+</style>
+<script>
+(() => {
+  const tabs=[...document.querySelectorAll('.demo-tabs [role="tab"]')];
+  const tooltip=document.getElementById('demo-tooltip');
+  const select=(tab,focus=false)=>{
+    tabs.forEach(t=>{const active=t===tab;t.setAttribute('aria-selected',String(active));t.tabIndex=active?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!active;});
+    tooltip.hidden=true;
+    if(focus)tab.focus();
+    document.dispatchEvent(new Event('demo:shown'));
+  };
+  tabs.forEach((tab,i)=>{
+    tab.addEventListener('click',()=>select(tab));
+    tab.addEventListener('keydown',event=>{
+      let next;if(event.key==='ArrowRight'||event.key==='ArrowDown')next=(i+1)%tabs.length;
+      else if(event.key==='ArrowLeft'||event.key==='ArrowUp')next=(i+tabs.length-1)%tabs.length;
+      else if(event.key==='Home')next=0;else if(event.key==='End')next=tabs.length-1;else return;
+      event.preventDefault();select(tabs[next],true);
+    });
+  });
+  function showTip(event){
+    const target=event.target.closest?.('[data-tooltip]');
+    if(!target||event.buttons){tooltip.hidden=true;return;}
+    tooltip.textContent=target.dataset.tooltip;tooltip.hidden=false;
+    const box=tooltip.getBoundingClientRect();
+    tooltip.style.left=`${Math.max(8,Math.min(innerWidth-box.width-8,event.clientX+13))}px`;
+    tooltip.style.top=`${Math.max(8,Math.min(innerHeight-box.height-8,event.clientY+16))}px`;
+  }
+  document.addEventListener('pointermove',showTip);
+  document.addEventListener('pointerdown',()=>tooltip.hidden=true);
+  document.addEventListener('keydown',()=>tooltip.hidden=true);
+  document.addEventListener('scroll',()=>tooltip.hidden=true,true);
+  document.addEventListener('pointerout',e=>{if(!e.relatedTarget)tooltip.hidden=true;});
+  select(location.hash==='#hill'?tabs[1]:tabs[0]);
+})();
+</script>
+
+</body>
+</html>
