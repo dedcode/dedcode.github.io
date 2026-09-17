@@ -19,8 +19,8 @@
   const scoreDomain = [scoreExtent[0]-0.3,scoreExtent[1]+0.3];
   const sigmoidData = d3.range(301).map(i=>({x:scoreDomain[0]+i*(scoreDomain[1]-scoreDomain[0])/300})).map(d=>({...d,y:sigmoid(d.x)}));
   const probabilityDomain = d3.extent([0,1,...sigmoidData.map(d=>d.y)]);
-  const lossSamples = d3.range(601).map(i=>sigmoid(scoreDomain[0]+i*(scoreDomain[1]-scoreDomain[0])/600));
-  const maxLoss = d3.max(lossSamples,p=>Math.max(-Math.log(p),-Math.log1p(-p)));
+  const lossSamples = d3.range(601).map(i=>scoreDomain[0]+i*(scoreDomain[1]-scoreDomain[0])/600);
+  const maxLoss = d3.max(lossSamples,z=>Math.max(logLoss(z,0),logLoss(z,1)));
   let positionScales;
   let announceTimer;
   function geometry(angle,offset) {
@@ -251,14 +251,14 @@
     el('probability-value').textContent = trueClassProbability.toFixed(4);
     el('other-probability-value').textContent = otherProbability.toFixed(4);
     el('loss-value').textContent = loss.toFixed(4);
-    el('loss-formula').textContent = `L = −ln(q), where q = P(y = ${state.y})`;
-    el('loss-explanation').textContent = state.y === 1 ? 'Higher P(y = 1) → lower loss' : 'Higher P(y = 0) → lower loss';
+    el('loss-formula').textContent = `L = ln(1 + exp(${state.y === 1 ? '−f(x)' : 'f(x)'})) = −ln(q)`;
+    el('loss-explanation').textContent = state.y === 1 ? 'y = 1: more positive f(x) → lower loss' : 'y = 0: more negative f(x) → lower loss';
     el('distance-value').textContent = 'Class-relative signed distance = s / √2 = ' + signed(selectedScore / weightNorm) + ' · positive on the correct side';
     el('logodds-value').textContent = `Model score f(x) = ${signed(z)} · Class-${state.y} log-odds s = ${signed(selectedScore)} · Class-${state.y} odds q / (1 − q) = ${Math.exp(selectedScore).toFixed(3)}`;
     el('original-loss').textContent = `Original point ${original.id}: loss Lᵢ = ${original.loss.toFixed(4)}.`;
     el('inspection-total').textContent = `Training total Σ Lᵢ = ${total.toFixed(4)} across ${values.length} points. Moving the copy leaves this total unchanged.`;
     el('probability-plot').setAttribute('aria-label', `Probability P(y = ${state.y}) as a function of selected-class score s = ${scoreExpression}. Current score ${selectedScore.toFixed(3)}; probability ${trueClassProbability.toFixed(4)}.`);
-    el('loss-plot').setAttribute('aria-label', `Loss equals minus the log of P(y = ${state.y}). Current selected-class probability ${trueClassProbability.toFixed(4)}; loss ${loss.toFixed(4)}.`);
+    el('loss-plot').setAttribute('aria-label', `Log loss versus model score f(x), a signed distance proxy, for true label y = ${state.y}. Current f(x) ${z.toFixed(3)}; loss ${loss.toFixed(4)}.`);
     const b = base('probability-plot', scoreDomain, probabilityDomain, `Class-${state.y} score s = ${scoreExpression}`, `P(y = ${state.y})`);
     line(b, [[0, 0], [0, 1]], c.border, '3 4');
     line(b, [[scoreDomain[0], 0.5], [scoreDomain[1], 0.5]], c.border, '3 4');
@@ -266,12 +266,12 @@
     line(b, [[selectedScore, 0], [selectedScore, trueClassProbability], [scoreDomain[0], trueClassProbability]], c.active, '4 4');
     marker(b, selectedScore, trueClassProbability);
     label(b, b.box.l, 16, 's = 0 → q = 0.5');
-    const d = base('loss-plot', probabilityDomain, [0, maxLoss * 1.05], `q = P(y = ${state.y})`, 'Log loss L (nats)');
-    line(d, lossSamples.map(q => [q, -Math.log(q)]), c.active, null, 2.5);
-    line(d, [[trueClassProbability, 0], [trueClassProbability, loss], [0, loss]], c.active, '4 4');
-    marker(d, trueClassProbability, loss);
-    label(d, d.box.l, 16, 'q = 0.5 → L ≈ 0.693');
-    label(d, d.x(0) + 5, d.y(maxLoss) + 8, '↑ ∞', 'start');
+    const d = base('loss-plot', scoreDomain, [0, maxLoss * 1.05], 'f(x) · signed distance proxy', 'Log loss L (nats)');
+    line(d, [[0, 0], [0, maxLoss * 1.05]], c.border, '3 4');
+    line(d, lossSamples.map(z => [z, logLoss(z, state.y)]), c.active, null, 2.5);
+    line(d, [[z, 0], [z, loss], [scoreDomain[0], loss]], c.active, '4 4');
+    marker(d, z, loss);
+    label(d, d.box.l, 16, 'f(x) = 0 → L ≈ 0.693');
     [b, d].forEach(checkLabels);
   }
   function addTrainingPoint(x1, x2) {

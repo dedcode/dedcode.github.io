@@ -34,7 +34,9 @@ Drag the diamond or edit **Copy x₁ / Copy x₂** to follow position → score 
 
 The inspection pipeline is oriented toward the selected class. Its score is **s = (2y − 1) f(x)**: **s = f(x)** for a class-1 point and **s = −f(x)** for a class-0 point. The displayed signed distance is **s / √2**, positive on that point's correct side. The sigmoid plots **q = sigmoid(s) = P(the selected class)**, and the loss plot uses **L = −ln(q)** for both classes. Moving either class's point deeper into its correct region therefore increases the displayed score and probability and decreases its loss.
 
-The raw model score f(x) remains visible separately. Selecting class 0 reverses the score used for explanation; it does not alter the underlying classifier or the decision boundary. The other class's probability is shown as **1 − q**. The training table in step 2 continues to label its probability column explicitly as **P(y = 1)**.
+The loss plot uses the raw model score **f(x)** on its horizontal axis, a signed distance proxy (the exact signed distance is **f(x) / √2**). It plots **L = ln(1 + exp(−f(x)))** for class 1 and **L = ln(1 + exp(f(x)))** for class 0. Thus the loss curve falls toward the right for class 1 and toward the left for class 0. Both curves pass through **L = ln(2) ≈ 0.693** at **f(x) = 0**.
+
+The raw model score f(x) remains visible separately. Selecting class 0 reverses the score used in the probability plot; it does not alter the underlying classifier or the decision boundary. The other class's probability is shown as **1 − q**. The training table in step 2 continues to label its probability column explicitly as **P(y = 1)**.
 
 Moving the copy does not change any training point or the total training loss. The original point's loss and the unchanged training total are shown for comparison. **Return copy to original** restores the selected point's coordinates.
 
