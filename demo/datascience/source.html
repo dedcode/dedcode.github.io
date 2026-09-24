@@ -1,4 +1,10 @@
 <div id="correlation-explorer">
+  <h1>Data science essentials</h1>
+  <div class="nav nav-pills" role="tablist" aria-label="Data science topic">
+    <button class="nav-link active" id="correlation-tab" role="tab" aria-controls="correlation-panel" aria-selected="true" type="button">Correlation</button>
+    <button class="nav-link" id="standardization-tab" role="tab" aria-controls="standardization-panel" aria-selected="false" type="button">Standardization</button>
+  </div>
+  <section id="correlation-panel" role="tabpanel" aria-labelledby="correlation-tab">
   <h2>Correlation: two standardized variables</h2>
   <label class="form-label" for="correlation-slider">Pearson correlation r = <output id="correlation-value" class="tabular-nums">0.00</output></label>
   <input class="form-range" id="correlation-slider" type="range" min="-1" max="1" step="0.01" value="0" />
@@ -7,12 +13,26 @@
   <div id="correlation-detail" class="text-small" aria-live="polite"></div>
   <div class="text-small">120 observations · Both means = 0 · Both sample SDs = 1</div>
   <div id="correlation-accessible" class="sr-only" aria-live="polite"></div>
-  <hr>
+  <h3>Computing Pearson correlation</h3>
+  <div class="formula">r = Σᵢ (xᵢ − x̄)(yᵢ − ȳ) / √[Σᵢ (xᵢ − x̄)² · Σᵢ (yᵢ − ȳ)²]</div>
+  <div class="formula">For standardized values: r = Σᵢ zₓᵢ zᵧᵢ / (n − 1)</div>
+  <p class="text-small">The sums run over all n observations; x̄ and ȳ are the sample means. Same-sign deviations contribute positively; opposite-sign deviations contribute negatively. Correlation measures linear association.</p>
+  </section>
+  <section id="standardization-panel" role="tabpanel" aria-labelledby="standardization-tab" hidden>
   <h2>Standardization: three machine-learning features</h2>
+  <div class="formula">Mean: x̄ = (Σᵢ xᵢ) / n</div>
+  <div class="formula">Sample standard deviation: sₓ = √[Σᵢ (xᵢ − x̄)² / (n − 1)]</div>
+  <div class="formula">Standardized value: zᵢ = (xᵢ − x̄) / sₓ</div>
+  <p class="text-small">Apply this separately to each feature: subtract its mean, then divide by its standard deviation. The result has mean 0 and sample standard deviation 1; its shape and ordering stay the same. This demo uses n − 1; some ML libraries use n for variance.</p>
   <div class="text-small">120 synthetic people · Original units → standard deviations from the mean</div>
   <div id="standardization-chart"></div>
+  <p class="text-small">For machine learning, compute the mean and standard deviation on the training data, then reuse them for validation, test, and new data. A constant feature needs special handling because its standard deviation is zero.</p>
+  </section>
 </div>
 <style>
+#correlation-explorer {max-width:860px;margin:0 auto;}
+#correlation-explorer [role="tabpanel"] {padding-top:16px;}
+#correlation-explorer .formula {margin:12px 0;overflow-wrap:anywhere;}
 #correlation-explorer .correlation-endpoints {display:flex;justify-content:space-between;gap:8px;}
 #correlation-explorer .correlation-endpoints span {flex:1;}
 #correlation-explorer .correlation-endpoints span:nth-child(2) {text-align:center;}
@@ -57,6 +77,7 @@
     slider.setAttribute('aria-valuetext',`Correlation ${r.toFixed(2)}`);
     points=x.map((v,i)=>({x:v,y:r*v+Math.sqrt(Math.max(0,1-r*r))*e[i]}));
     const width=root.querySelector('#correlation-chart').getBoundingClientRect().width;
+    if(!width)return;
     const left=64,right=18,top=24,bottom=58;
     const side=Math.max(140,Math.min(width-left-right,430));
     const height=side+top+bottom;
@@ -91,6 +112,7 @@
     drawStandardization(animate);
   }
   function drawStandardization(){
+    if(!root.querySelector('#standardization-chart').getBoundingClientRect().width)return;
     const features=[
       {name:'Age',unit:'years',values:x.map(v=>45+8*v)},
       {name:'Annual income',unit:'USD / year',values:e.map(v=>50000*Math.exp(0.45*v))},
@@ -145,6 +167,7 @@
   });
   window.addEventListener('openai:set_globals',event=>{if(event.detail?.globals?.widgetState){restore(event.detail.globals.widgetState);render();}});
   new ResizeObserver(()=>render()).observe(root.querySelector('#correlation-chart'));
+  new ResizeObserver(()=>drawStandardization()).observe(root.querySelector('#standardization-chart'));
   render();
 })();
 </script>
