@@ -1,0 +1,150 @@
+<div id="correlation-explorer">
+  <h2>Correlation: two standardized variables</h2>
+  <label class="form-label" for="correlation-slider">Pearson correlation r = <output id="correlation-value" class="tabular-nums">0.00</output></label>
+  <input class="form-range" id="correlation-slider" type="range" min="-1" max="1" step="0.01" value="0" />
+  <div class="correlation-endpoints text-small"><span>−1 · opposite directions</span><span>0</span><span>+1 · same direction</span></div>
+  <div id="correlation-chart"><svg role="img" class="correlation-plot" aria-label="Scatterplot of standardized X and Y"></svg></div>
+  <div id="correlation-detail" class="text-small" aria-live="polite"></div>
+  <div class="text-small">120 observations · Both means = 0 · Both sample SDs = 1</div>
+  <div id="correlation-accessible" class="sr-only" aria-live="polite"></div>
+  <hr>
+  <h2>Standardization: three machine-learning features</h2>
+  <div class="text-small">120 synthetic people · Original units → standard deviations from the mean</div>
+  <div id="standardization-chart"></div>
+</div>
+<style>
+#correlation-explorer .correlation-endpoints {display:flex;justify-content:space-between;gap:8px;}
+#correlation-explorer .correlation-endpoints span {flex:1;}
+#correlation-explorer .correlation-endpoints span:nth-child(2) {text-align:center;}
+#correlation-explorer .correlation-endpoints span:last-child {text-align:right;}
+#correlation-explorer .correlation-plot {display:block;width:100%;overflow:visible;}
+#correlation-explorer .correlation-plot text {fill:var(--foreground);font-size:12px;}
+#correlation-explorer #correlation-detail {min-height:24px;}
+#correlation-explorer .feature-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
+#correlation-explorer .feature-panel {min-width:0;}
+@media(max-width:580px){#correlation-explorer .feature-pair {grid-template-columns:1fr;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+(()=>{
+  const root=document.getElementById('correlation-explorer');
+  const slider=root.querySelector('#correlation-slider');
+  const value=root.querySelector('#correlation-value');
+  const detail=root.querySelector('#correlation-detail');
+  const svg=d3.select(root.querySelector('svg'));
+  let seed=719;
+  const uniform=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return (seed+0.5)/4294967296;};
+  const normal=()=>Math.sqrt(-2*Math.log(uniform()))*Math.cos(2*Math.PI*uniform());
+  const standardize=a=>{const mean=d3.mean(a),sd=d3.deviation(a);return a.map(v=>(v-mean)/sd);};
+  const x=standardize(d3.range(120).map(normal));
+  const noise=standardize(d3.range(120).map(normal));
+  const projection=d3.sum(x,(v,i)=>v*noise[i])/(x.length-1);
+  const e=standardize(noise.map((v,i)=>v-projection*x[i]));
+  // Orthogonal centered vectors make the sample correlation exactly r;
+  // Y keeps sample mean 0 and sample SD 1 for every slider value.
+  const bounds=d3.extent(x.flatMap((v,i)=>[-Math.hypot(v,e[i]),Math.hypot(v,e[i])]));
+  const pad=(bounds[1]-bounds[0])*0.04;
+  const domain=[bounds[0]-pad,bounds[1]+pad];
+  let r=0,scales,points=[],selected=null;
+  const fmt=v=>Math.abs(v)<0.005?'0.00':d3.format('+.2f')(v);
+  function restore(saved){const v=saved?.modelContent?.correlation;if(Number.isFinite(v))r=Math.max(-1,Math.min(1,v));}
+  restore(window.openai?.widgetState);
+  function updateDetail(){
+    detail.textContent=selected===null ? (r===0?'No linear association':Math.abs(r)===1?'Perfect '+(r>0?'positive':'negative')+' linear association':(r>0?'Positive':'Negative')+' linear association') : `Observation ${selected+1}: X = ${fmt(points[selected].x)} SD · Y = ${fmt(points[selected].y)} SD`;
+  }
+  function render(animate=false){
+    slider.value=r;value.textContent=fmt(r);
+    slider.setAttribute('aria-valuetext',`Correlation ${r.toFixed(2)}`);
+    points=x.map((v,i)=>({x:v,y:r*v+Math.sqrt(Math.max(0,1-r*r))*e[i]}));
+    const width=root.querySelector('#correlation-chart').getBoundingClientRect().width;
+    const left=64,right=18,top=24,bottom=58;
+    const side=Math.max(140,Math.min(width-left-right,430));
+    const height=side+top+bottom;
+    const l=left+(width-left-right-side)/2,rr=l+side,t=top,b=t+side;
+    const sx=d3.scaleLinear().domain(domain).range([l+7,rr-7]);
+    const sy=d3.scaleLinear().domain(domain).range([b-7,t+7]);
+    scales={sx,sy};
+    svg.attr('viewBox',`0 0 ${width} ${height}`).attr('height',height).attr('aria-label',`120 standardized observations. Pearson correlation ${r.toFixed(2)}. Both variables have mean zero and sample standard deviation one.`);
+    svg.selectAll('g.structure').remove();
+    const g=svg.insert('g',':first-child').attr('class','structure');
+    g.append('rect').attr('data-chart-frame','').attr('x',l).attr('y',t).attr('width',side).attr('height',side).attr('fill','none').attr('stroke','var(--border)');
+    [[l,sy(0),rr,sy(0)],[sx(0),t,sx(0),b]].forEach(p=>g.append('line').attr('x1',p[0]).attr('y1',p[1]).attr('x2',p[2]).attr('y2',p[3]).attr('stroke','var(--border)'));
+    const ticks=width<400?3:5;
+    g.append('g').attr('transform',`translate(0,${b})`).call(d3.axisBottom(sx).ticks(ticks).tickSizeOuter(0));
+    g.append('g').attr('transform',`translate(${l},0)`).call(d3.axisLeft(sy).ticks(ticks).tickSizeOuter(0));
+    g.append('text').attr('class','axis-title').attr('data-axis','x').attr('x',(l+rr)/2).attr('y',height-12).attr('text-anchor','middle').text('Standardized X (SD from mean)');
+    g.append('text').attr('class','axis-title').attr('data-axis','y').attr('transform',`translate(${l-46},${(t+b)/2}) rotate(-90)`).attr('text-anchor','middle').text('Standardized Y (SD from mean)');
+    const marks=svg.selectAll('circle.observation').data(points).join('circle').attr('class','observation').attr('r',4).attr('fill','var(--viz-series-1)').attr('fill-opacity',0.65);
+    marks.interrupt();
+    const target=animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches?marks.transition().duration(80).ease(d3.easeLinear):marks;
+    target.attr('cx',d=>sx(d.x)).attr('cy',d=>sy(d.y));
+    svg.selectAll('rect.hit').data([0]).join('rect').attr('class','hit').attr('data-chart-hit','').attr('x',l).attr('y',t).attr('width',side).attr('height',side).attr('fill','transparent').on('pointermove',event=>{
+      if(event.pointerType==='touch')return;
+      const [px,py]=d3.pointer(event,svg.node());selectNearest(px,py);
+    }).on('click',event=>{const [px,py]=d3.pointer(event,svg.node());selectNearest(px,py);}).on('pointerleave',()=>{selected=null;updateDetail();});
+    const labels=[...svg.node().querySelectorAll('.tick text,.axis-title')].map(el=>({el,box:el.getBoundingClientRect()}));
+    for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){
+      const a=labels[i].box,b=labels[j].box;
+      if(a.width&&b.width&&a.left<b.right+4&&a.right+4>b.left&&a.top<b.bottom+4&&a.bottom+4>b.top){const tick=labels[j].el.closest('.tick')?labels[j].el:labels[i].el.closest('.tick')?labels[i].el:null;if(tick)tick.style.visibility='hidden';}
+    }
+    updateDetail();
+    drawStandardization(animate);
+  }
+  function drawStandardization(){
+    const features=[
+      {name:'Age',unit:'years',values:x.map(v=>45+8*v)},
+      {name:'Annual income',unit:'USD / year',values:e.map(v=>50000*Math.exp(0.45*v))},
+      {name:'Weekly work',unit:'hours / week',values:x.map((v,i)=>36+5*(0.6*v+0.8*e[i]))}
+    ].map(f=>({...f,mean:d3.mean(f.values),sd:d3.deviation(f.values),z:standardize(f.values)}));
+    const zExtent=d3.extent(features.flatMap(f=>f.z).concat([-1,1]));
+    const zPad=(zExtent[1]-zExtent[0])*0.08;
+    const zDomain=[zExtent[0]-zPad,zExtent[1]+zPad];
+    const container=d3.select(root.querySelector('#standardization-chart'));
+    const rows=container.selectAll('section.feature-row').data(features).join('section').attr('class','feature-row');
+    rows.each(function(f){
+      const section=d3.select(this);
+      section.selectAll('h3').data([f]).join('h3').text(f.name);
+      const pair=section.selectAll('div.feature-pair').data([f]).join('div').attr('class','feature-pair');
+      const panels=pair.selectAll('div.feature-panel').data([false,true]).join('div').attr('class','feature-panel');
+      const rawExtent=d3.extent(f.values.concat([f.mean-f.sd,f.mean+f.sd]));
+      const rawPad=(rawExtent[1]-rawExtent[0])*0.08;
+      const rawDomain=[rawExtent[0]-rawPad,rawExtent[1]+rawPad];
+      const bins=d3.bin().domain(rawDomain).thresholds(12)(f.values);
+      const ymax=d3.max(bins,b=>b.length)*1.12;
+      panels.each(function(after){
+        const panel=d3.select(this);
+        panel.selectAll('div.feature-label').data([0]).join('div').attr('class','feature-label text-small tabular-nums').text(after?'Standardized · mean 0 · SD 1':`Original · mean ${d3.format(',.1f')(f.mean)} · SD ${d3.format(',.1f')(f.sd)}`);
+        const plot=panel.selectAll('svg').data([0]).join('svg').attr('class','correlation-plot').attr('role','img');
+        const width=this.getBoundingClientRect().width,height=205,left=64,right=14,top=26,bottom=149;
+        const axisDomain=after?zDomain:rawDomain;
+        const sx=d3.scaleLinear().domain(axisDomain).range([left+5,width-right-5]);
+        const sy=d3.scaleLinear().domain([0,ymax]).range([bottom,top]);
+        const convert=v=>after?(v-f.mean)/f.sd:v;
+        plot.attr('viewBox',`0 0 ${width} ${height}`).attr('height',height).attr('aria-label',`${f.name}, ${after?'standardized: mean zero and sample standard deviation one':'original units: mean '+f.mean.toFixed(1)+' and sample standard deviation '+f.sd.toFixed(1)}. Histogram shape preserved.`);
+        plot.selectAll('*').remove();
+        plot.append('rect').attr('data-chart-frame','').attr('x',left).attr('y',top).attr('width',width-left-right).attr('height',bottom-top).attr('fill','none').attr('stroke','var(--border)');
+        plot.append('rect').attr('x',sx(convert(f.mean-f.sd))).attr('y',top).attr('width',sx(convert(f.mean+f.sd))-sx(convert(f.mean-f.sd))).attr('height',bottom-top).attr('fill','var(--muted)').attr('opacity',0.65);
+        plot.selectAll('rect.bar').data(bins).join('rect').attr('class','bar').attr('x',b=>sx(convert(b.x0))+0.5).attr('y',b=>sy(b.length)).attr('width',b=>Math.max(0,sx(convert(b.x1))-sx(convert(b.x0))-1)).attr('height',b=>bottom-sy(b.length)).attr('fill','var(--viz-series-1)').attr('opacity',0.7);
+        plot.append('line').attr('x1',sx(convert(f.mean))).attr('x2',sx(convert(f.mean))).attr('y1',top).attr('y2',bottom).attr('stroke','var(--foreground)').attr('stroke-width',1);
+        plot.append('g').attr('transform',`translate(0,${bottom})`).call(d3.axisBottom(sx).ticks(width<400?3:5).tickFormat(after?d3.format('~g'):d3.format('~s')).tickSizeOuter(0));
+        plot.append('g').attr('transform',`translate(${left},0)`).call(d3.axisLeft(sy).ticks(3).tickFormat(d3.format('d')).tickSizeOuter(0));
+        plot.append('text').attr('class','axis-title').attr('data-axis','x').attr('x',(left+width-right)/2).attr('y',height-10).attr('text-anchor','middle').text(after?'z-score (SD from mean)':f.unit);
+        plot.append('text').attr('class','axis-title').attr('data-axis','y').attr('transform',`translate(18,${(top+bottom)/2}) rotate(-90)`).attr('text-anchor','middle').text('People');
+        plot.append('text').attr('x',left).attr('y',16).text('Line: mean · band: ±1 SD');
+        const labels=[...plot.node().querySelectorAll('.tick text,.axis-title')].map(el=>({el,b:el.getBoundingClientRect()}));
+        for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){const a=labels[i].b,b=labels[j].b;if(a.width&&b.width&&a.left<b.right+4&&a.right+4>b.left&&a.top<b.bottom+4&&a.bottom+4>b.top){const tick=labels[j].el.closest('.tick')?labels[j].el:labels[i].el.closest('.tick')?labels[i].el:null;if(tick)tick.style.visibility='hidden';}}
+      });
+    });
+  }
+  function save(){window.openai?.setWidgetState?.({modelContent:{correlation:r},privateContent:null}).catch(()=>{});}
+  function selectNearest(px,py){selected=d3.leastIndex(points,p=>Math.hypot(scales.sx(p.x)-px,scales.sy(p.y)-py));updateDetail();}
+  slider.addEventListener('input',()=>{r=Number(slider.value);render(true);});
+  slider.addEventListener('change',()=>{
+    root.querySelector('#correlation-accessible').textContent=`Correlation ${r.toFixed(2)}. Both variables remain standardized.`;
+    save();
+  });
+  window.addEventListener('openai:set_globals',event=>{if(event.detail?.globals?.widgetState){restore(event.detail.globals.widgetState);render();}});
+  new ResizeObserver(()=>render()).observe(root.querySelector('#correlation-chart'));
+  render();
+})();
+</script>
