@@ -17,6 +17,11 @@
   <div class="formula">r = Σᵢ (xᵢ − x̄)(yᵢ − ȳ) / √[Σᵢ (xᵢ − x̄)² · Σᵢ (yᵢ − ȳ)²]</div>
   <div class="formula">For standardized values: r = Σᵢ zₓᵢ zᵧᵢ / (n − 1)</div>
   <p class="text-small">The sums run over all n observations; x̄ and ȳ are the sample means. Same-sign deviations contribute positively; opposite-sign deviations contribute negatively. Correlation measures linear association.</p>
+  <hr>
+  <h2>Look beyond the coefficient</h2>
+  <p class="text-small">Six synthetic examples. Each r is computed from the plotted points. These examples stay fixed when you move the slider above.</p>
+  <div id="correlation-cases"></div>
+  <p class="text-small">Always plot the data: check curvature, unusual points, groups, and changing spread. Correlation alone does not establish causation.</p>
   </section>
   <section id="standardization-panel" role="tabpanel" aria-labelledby="standardization-tab" hidden>
   <h2>Standardization: three machine-learning features</h2>
@@ -42,6 +47,11 @@
 #correlation-explorer #correlation-detail {min-height:24px;}
 #correlation-explorer .feature-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
 #correlation-explorer .feature-panel {min-width:0;}
+#correlation-explorer #correlation-cases {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 16px;}
+#correlation-explorer .case-panel {min-width:0;}
+#correlation-explorer .case-panel h3 {min-height:40px;}
+@media(max-width:720px){#correlation-explorer #correlation-cases {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:480px){#correlation-explorer #correlation-cases {grid-template-columns:1fr;}}
 @media(max-width:580px){#correlation-explorer .feature-pair {grid-template-columns:1fr;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -159,6 +169,47 @@
     });
   }
   function save(){window.openai?.setWidgetState?.({modelContent:{correlation:r},privateContent:null}).catch(()=>{});}
+  function pearson(data){
+    const mx=d3.mean(data,p=>p.x),my=d3.mean(data,p=>p.y);
+    return d3.sum(data,p=>(p.x-mx)*(p.y-my))/Math.sqrt(d3.sum(data,p=>(p.x-mx)**2)*d3.sum(data,p=>(p.y-my)**2));
+  }
+  const caseU=standardize(d3.range(61).map(i=>(i-30)/15));
+  const caseV=standardize(caseU.map(v=>v*v));
+  const ring=d3.range(40).map(i=>({x:Math.cos(2*Math.PI*i/40),y:Math.sin(2*Math.PI*i/40)}));
+  const grouped=[-1,1].flatMap(g=>d3.range(20).map(i=>{const t=(i-9.5)/10;return{x:3*g+t,y:-3*g+t,group:g===-1?0:1};}));
+  const specialCases=[
+    {title:'1. A linear pattern',data:x.map((v,i)=>({x:v,y:0.8*v+0.6*e[i]})),note:'A useful linear summary. Compare its r with the curved pattern next to it.'},
+    {title:'2. Same r, curved pattern',data:caseU.map((v,i)=>({x:v,y:0.8*v+0.6*caseV[i]})),note:'The same r = +0.80 hides a systematic bend. A straight line misses the shape.'},
+    {title:'3. One influential point',data:[...ring,{x:12,y:12,outlier:true}],note:'The isolated diamond drives the result. Without it, r = '+fmt(pearson(ring))+'.'},
+    {title:'4. Zero r, clear relationship',data:caseU.map(v=>({x:v,y:v*v})),note:'Y is determined by X², yet positive and negative linear contributions cancel.'},
+    {title:'5. Hidden groups reverse it',data:grouped,note:'Overall negative; within each group r = +1.00. ● Group A · ■ Group B.'},
+    {title:'6. Changing spread',data:d3.range(21).flatMap(i=>{const v=i/5;return[-1,-0.5,0,0.5,1].map(a=>({x:v,y:v+a*(0.15+0.7*v)}));}),note:'The uncertainty grows with X. One coefficient cannot describe this widening spread.'}
+  ];
+  function drawCases(){
+    const container=root.querySelector('#correlation-cases');
+    if(!container.getBoundingClientRect().width)return;
+    d3.select(container).selectAll('section.case-panel').data(specialCases).join('section').attr('class','case-panel').each(function(c){
+      const panel=d3.select(this),coefficient=pearson(c.data);
+      panel.selectAll('h3').data([0]).join('h3').text(c.title);
+      panel.selectAll('div.case-value').data([0]).join('div').attr('class','case-value tabular-nums').text('r = '+fmt(coefficient));
+      const plot=panel.selectAll('svg').data([0]).join('svg').attr('class','correlation-plot').attr('role','img');
+      const width=this.getBoundingClientRect().width,height=205,left=64,right=12,top=16,bottom=155;
+      const padded=key=>{const [lo,hi]=d3.extent(c.data,p=>p[key]),pad=(hi-lo)*0.08;return[lo-pad,hi+pad];};
+      const sx=d3.scaleLinear().domain(padded('x')).range([left+5,width-right-5]);
+      const sy=d3.scaleLinear().domain(padded('y')).range([bottom-5,top+5]);
+      plot.attr('viewBox',`0 0 ${width} ${height}`).attr('height',height).attr('aria-label',`${c.title}. Pearson r ${coefficient.toFixed(2)}. ${c.note}`);
+      plot.selectAll('*').remove();
+      plot.append('rect').attr('data-chart-frame','').attr('x',left).attr('y',top).attr('width',width-left-right).attr('height',bottom-top).attr('fill','none').attr('stroke','var(--border)');
+      plot.selectAll('path.point').data(c.data).join('path').attr('class','point').attr('transform',p=>`translate(${sx(p.x)},${sy(p.y)})`).attr('d',p=>d3.symbol().type(p.outlier?d3.symbolDiamond:p.group===1?d3.symbolSquare:d3.symbolCircle).size(p.outlier?55:20)()).attr('fill',p=>p.group===1?'var(--viz-series-2)':'var(--viz-series-1)').attr('opacity',0.8);
+      plot.append('g').attr('transform',`translate(0,${bottom})`).call(d3.axisBottom(sx).ticks(3).tickSizeOuter(0));
+      plot.append('g').attr('transform',`translate(${left},0)`).call(d3.axisLeft(sy).ticks(3).tickSizeOuter(0));
+      plot.append('text').attr('class','axis-title').attr('data-axis','x').attr('x',(left+width-right)/2).attr('y',height-10).attr('text-anchor','middle').text('X (arbitrary units)');
+      plot.append('text').attr('class','axis-title').attr('data-axis','y').attr('transform',`translate(18,${(top+bottom)/2}) rotate(-90)`).attr('text-anchor','middle').text('Y (arbitrary units)');
+      panel.selectAll('p.case-note').data([0]).join('p').attr('class','case-note text-small').text(c.note);
+      const labels=[...plot.node().querySelectorAll('.tick text,.axis-title')].map(el=>({el,b:el.getBoundingClientRect()}));
+      for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){const a=labels[i].b,b=labels[j].b;if(a.width&&b.width&&a.left<b.right+4&&a.right+4>b.left&&a.top<b.bottom+4&&a.bottom+4>b.top){const tick=labels[j].el.closest('.tick')?labels[j].el:labels[i].el.closest('.tick')?labels[i].el:null;if(tick)tick.style.visibility='hidden';}}
+    });
+  }
   function selectNearest(px,py){selected=d3.leastIndex(points,p=>Math.hypot(scales.sx(p.x)-px,scales.sy(p.y)-py));updateDetail();}
   slider.addEventListener('input',()=>{r=Number(slider.value);render(true);});
   slider.addEventListener('change',()=>{
@@ -168,6 +219,7 @@
   window.addEventListener('openai:set_globals',event=>{if(event.detail?.globals?.widgetState){restore(event.detail.globals.widgetState);render();}});
   new ResizeObserver(()=>render()).observe(root.querySelector('#correlation-chart'));
   new ResizeObserver(()=>drawStandardization()).observe(root.querySelector('#standardization-chart'));
+  new ResizeObserver(()=>drawCases()).observe(root.querySelector('#correlation-cases'));
   render();
 })();
 </script>
