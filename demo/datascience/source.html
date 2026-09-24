@@ -31,6 +31,7 @@
   <div class="formula">Standardized value: zᵢ = (xᵢ − x̄) / sₓ</div>
   <p class="text-small">Apply this separately to each feature: subtract its mean, then divide by its standard deviation. The result has mean 0 and sample standard deviation 1; its shape and ordering stay the same. This demo uses n − 1; some ML libraries use n for variance.</p>
   <div class="text-small">120 synthetic people · Original units → standard deviations from the mean</div>
+  <button id="standardize-button" class="btn btn-primary" type="button" aria-expanded="false" aria-controls="standardization-chart">Standardize</button>
   <div id="standardization-chart"></div>
   <p class="text-small">For machine learning, compute the mean and standard deviation on the training data, then reuse them for validation, test, and new data. A constant feature needs special handling because its standard deviation is zero.</p>
   </section>
@@ -48,6 +49,7 @@
 #correlation-explorer #correlation-detail {min-height:24px;}
 #correlation-explorer .feature-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
 #correlation-explorer .feature-panel {min-width:0;}
+#correlation-explorer .feature-pair.original-only {grid-template-columns:1fr;}
 #correlation-explorer .case-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 16px;}
 #correlation-explorer .case-panel {min-width:0;}
 #correlation-explorer .case-gallery {margin-top:28px;}
@@ -78,7 +80,7 @@
   const bounds=d3.extent(x.flatMap((v,i)=>[-Math.hypot(v,e[i]),Math.hypot(v,e[i])]));
   const pad=(bounds[1]-bounds[0])*0.04;
   const domain=[bounds[0]-pad,bounds[1]+pad];
-  let r=0,scales,points=[],selected=null;
+  let r=0,scales,points=[],selected=null,showStandardized=false;
   const fmt=v=>Math.abs(v)<0.005?'0.00':d3.format('+.2f')(v);
   function restore(saved){const v=saved?.modelContent?.correlation;if(Number.isFinite(v))r=Math.max(-1,Math.min(1,v));}
   restore(window.openai?.widgetState);
@@ -139,8 +141,8 @@
     rows.each(function(f){
       const section=d3.select(this);
       section.selectAll('h3').data([f]).join('h3').text(f.name);
-      const pair=section.selectAll('div.feature-pair').data([f]).join('div').attr('class','feature-pair');
-      const panels=pair.selectAll('div.feature-panel').data([false,true]).join('div').attr('class','feature-panel');
+      const pair=section.selectAll('div.feature-pair').data([f]).join('div').attr('class','feature-pair'+(showStandardized?'':' original-only'));
+      const panels=pair.selectAll('div.feature-panel').data(showStandardized?[false,true]:[false],after=>String(after)).join('div').attr('class','feature-panel');
       const rawExtent=d3.extent(f.values.concat([f.mean-f.sd,f.mean+f.sd]));
       const rawPad=(rawExtent[1]-rawExtent[0])*0.08;
       const rawDomain=[rawExtent[0]-rawPad,rawExtent[1]+rawPad];
@@ -172,6 +174,12 @@
     });
   }
   function save(){window.openai?.setWidgetState?.({modelContent:{correlation:r},privateContent:null}).catch(()=>{});}
+  root.querySelector('#standardize-button').addEventListener('click',event=>{
+    showStandardized=!showStandardized;
+    event.currentTarget.textContent=showStandardized?'Hide standardized plots':'Standardize';
+    event.currentTarget.setAttribute('aria-expanded',String(showStandardized));
+    drawStandardization();
+  });
   function pearson(data){
     const mx=d3.mean(data,p=>p.x),my=d3.mean(data,p=>p.y);
     return d3.sum(data,p=>(p.x-mx)*(p.y-my))/Math.sqrt(d3.sum(data,p=>(p.x-mx)**2)*d3.sum(data,p=>(p.y-my)**2));
