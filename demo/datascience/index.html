@@ -1359,6 +1359,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   &lt;div class=&quot;formula&quot;&gt;Standardized value: zᵢ = (xᵢ − x̄) / sₓ&lt;/div&gt;
   &lt;p class=&quot;text-small&quot;&gt;Apply this separately to each feature: subtract its mean, then divide by its standard deviation. The result has mean 0 and sample standard deviation 1; its shape and ordering stay the same. This demo uses n − 1; some ML libraries use n for variance.&lt;/p&gt;
   &lt;div class=&quot;text-small&quot;&gt;120 synthetic people · Original units → standard deviations from the mean&lt;/div&gt;
+  &lt;button id=&quot;standardize-button&quot; class=&quot;btn btn-primary&quot; type=&quot;button&quot; aria-expanded=&quot;false&quot; aria-controls=&quot;standardization-chart&quot;&gt;Standardize&lt;/button&gt;
   &lt;div id=&quot;standardization-chart&quot;&gt;&lt;/div&gt;
   &lt;p class=&quot;text-small&quot;&gt;For machine learning, compute the mean and standard deviation on the training data, then reuse them for validation, test, and new data. A constant feature needs special handling because its standard deviation is zero.&lt;/p&gt;
   &lt;/section&gt;
@@ -1376,6 +1377,7 @@ html&gt;body{padding:0}&lt;/style&gt;
 #correlation-explorer #correlation-detail {min-height:24px;}
 #correlation-explorer .feature-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
 #correlation-explorer .feature-panel {min-width:0;}
+#correlation-explorer .feature-pair.original-only {grid-template-columns:1fr;}
 #correlation-explorer .case-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 16px;}
 #correlation-explorer .case-panel {min-width:0;}
 #correlation-explorer .case-gallery {margin-top:28px;}
@@ -1406,7 +1408,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   const bounds=d3.extent(x.flatMap((v,i)=&gt;[-Math.hypot(v,e[i]),Math.hypot(v,e[i])]));
   const pad=(bounds[1]-bounds[0])*0.04;
   const domain=[bounds[0]-pad,bounds[1]+pad];
-  let r=0,scales,points=[],selected=null;
+  let r=0,scales,points=[],selected=null,showStandardized=false;
   const fmt=v=&gt;Math.abs(v)&lt;0.005?&#x27;0.00&#x27;:d3.format(&#x27;+.2f&#x27;)(v);
   function restore(saved){const v=saved?.modelContent?.correlation;if(Number.isFinite(v))r=Math.max(-1,Math.min(1,v));}
   restore(window.openai?.widgetState);
@@ -1467,8 +1469,8 @@ html&gt;body{padding:0}&lt;/style&gt;
     rows.each(function(f){
       const section=d3.select(this);
       section.selectAll(&#x27;h3&#x27;).data([f]).join(&#x27;h3&#x27;).text(f.name);
-      const pair=section.selectAll(&#x27;div.feature-pair&#x27;).data([f]).join(&#x27;div&#x27;).attr(&#x27;class&#x27;,&#x27;feature-pair&#x27;);
-      const panels=pair.selectAll(&#x27;div.feature-panel&#x27;).data([false,true]).join(&#x27;div&#x27;).attr(&#x27;class&#x27;,&#x27;feature-panel&#x27;);
+      const pair=section.selectAll(&#x27;div.feature-pair&#x27;).data([f]).join(&#x27;div&#x27;).attr(&#x27;class&#x27;,&#x27;feature-pair&#x27;+(showStandardized?&#x27;&#x27;:&#x27; original-only&#x27;));
+      const panels=pair.selectAll(&#x27;div.feature-panel&#x27;).data(showStandardized?[false,true]:[false],after=&gt;String(after)).join(&#x27;div&#x27;).attr(&#x27;class&#x27;,&#x27;feature-panel&#x27;);
       const rawExtent=d3.extent(f.values.concat([f.mean-f.sd,f.mean+f.sd]));
       const rawPad=(rawExtent[1]-rawExtent[0])*0.08;
       const rawDomain=[rawExtent[0]-rawPad,rawExtent[1]+rawPad];
@@ -1500,6 +1502,12 @@ html&gt;body{padding:0}&lt;/style&gt;
     });
   }
   function save(){window.openai?.setWidgetState?.({modelContent:{correlation:r},privateContent:null}).catch(()=&gt;{});}
+  root.querySelector(&#x27;#standardize-button&#x27;).addEventListener(&#x27;click&#x27;,event=&gt;{
+    showStandardized=!showStandardized;
+    event.currentTarget.textContent=showStandardized?&#x27;Hide standardized plots&#x27;:&#x27;Standardize&#x27;;
+    event.currentTarget.setAttribute(&#x27;aria-expanded&#x27;,String(showStandardized));
+    drawStandardization();
+  });
   function pearson(data){
     const mx=d3.mean(data,p=&gt;p.x),my=d3.mean(data,p=&gt;p.y);
     return d3.sum(data,p=&gt;(p.x-mx)*(p.y-my))/Math.sqrt(d3.sum(data,p=&gt;(p.x-mx)**2)*d3.sum(data,p=&gt;(p.y-my)**2));
