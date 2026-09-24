@@ -1327,6 +1327,12 @@ html&gt;body{padding:0}&lt;/style&gt;
 })();
 &lt;/script&gt;
 &lt;div id=&quot;correlation-explorer&quot;&gt;
+  &lt;h1&gt;Data science essentials&lt;/h1&gt;
+  &lt;div class=&quot;nav nav-pills&quot; role=&quot;tablist&quot; aria-label=&quot;Data science topic&quot;&gt;
+    &lt;button class=&quot;nav-link active&quot; id=&quot;correlation-tab&quot; role=&quot;tab&quot; aria-controls=&quot;correlation-panel&quot; aria-selected=&quot;true&quot; type=&quot;button&quot;&gt;Correlation&lt;/button&gt;
+    &lt;button class=&quot;nav-link&quot; id=&quot;standardization-tab&quot; role=&quot;tab&quot; aria-controls=&quot;standardization-panel&quot; aria-selected=&quot;false&quot; type=&quot;button&quot;&gt;Standardization&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;section id=&quot;correlation-panel&quot; role=&quot;tabpanel&quot; aria-labelledby=&quot;correlation-tab&quot;&gt;
   &lt;h2&gt;Correlation: two standardized variables&lt;/h2&gt;
   &lt;label class=&quot;form-label&quot; for=&quot;correlation-slider&quot;&gt;Pearson correlation r = &lt;output id=&quot;correlation-value&quot; class=&quot;tabular-nums&quot;&gt;0.00&lt;/output&gt;&lt;/label&gt;
   &lt;input class=&quot;form-range&quot; id=&quot;correlation-slider&quot; type=&quot;range&quot; min=&quot;-1&quot; max=&quot;1&quot; step=&quot;0.01&quot; value=&quot;0&quot; /&gt;
@@ -1335,12 +1341,26 @@ html&gt;body{padding:0}&lt;/style&gt;
   &lt;div id=&quot;correlation-detail&quot; class=&quot;text-small&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
   &lt;div class=&quot;text-small&quot;&gt;120 observations · Both means = 0 · Both sample SDs = 1&lt;/div&gt;
   &lt;div id=&quot;correlation-accessible&quot; class=&quot;sr-only&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
-  &lt;hr&gt;
+  &lt;h3&gt;Computing Pearson correlation&lt;/h3&gt;
+  &lt;div class=&quot;formula&quot;&gt;r = Σᵢ (xᵢ − x̄)(yᵢ − ȳ) / √[Σᵢ (xᵢ − x̄)² · Σᵢ (yᵢ − ȳ)²]&lt;/div&gt;
+  &lt;div class=&quot;formula&quot;&gt;For standardized values: r = Σᵢ zₓᵢ zᵧᵢ / (n − 1)&lt;/div&gt;
+  &lt;p class=&quot;text-small&quot;&gt;The sums run over all n observations; x̄ and ȳ are the sample means. Same-sign deviations contribute positively; opposite-sign deviations contribute negatively. Correlation measures linear association.&lt;/p&gt;
+  &lt;/section&gt;
+  &lt;section id=&quot;standardization-panel&quot; role=&quot;tabpanel&quot; aria-labelledby=&quot;standardization-tab&quot; hidden&gt;
   &lt;h2&gt;Standardization: three machine-learning features&lt;/h2&gt;
+  &lt;div class=&quot;formula&quot;&gt;Mean: x̄ = (Σᵢ xᵢ) / n&lt;/div&gt;
+  &lt;div class=&quot;formula&quot;&gt;Sample standard deviation: sₓ = √[Σᵢ (xᵢ − x̄)² / (n − 1)]&lt;/div&gt;
+  &lt;div class=&quot;formula&quot;&gt;Standardized value: zᵢ = (xᵢ − x̄) / sₓ&lt;/div&gt;
+  &lt;p class=&quot;text-small&quot;&gt;Apply this separately to each feature: subtract its mean, then divide by its standard deviation. The result has mean 0 and sample standard deviation 1; its shape and ordering stay the same. This demo uses n − 1; some ML libraries use n for variance.&lt;/p&gt;
   &lt;div class=&quot;text-small&quot;&gt;120 synthetic people · Original units → standard deviations from the mean&lt;/div&gt;
   &lt;div id=&quot;standardization-chart&quot;&gt;&lt;/div&gt;
+  &lt;p class=&quot;text-small&quot;&gt;For machine learning, compute the mean and standard deviation on the training data, then reuse them for validation, test, and new data. A constant feature needs special handling because its standard deviation is zero.&lt;/p&gt;
+  &lt;/section&gt;
 &lt;/div&gt;
 &lt;style&gt;
+#correlation-explorer {max-width:860px;margin:0 auto;}
+#correlation-explorer [role=&quot;tabpanel&quot;] {padding-top:16px;}
+#correlation-explorer .formula {margin:12px 0;overflow-wrap:anywhere;}
 #correlation-explorer .correlation-endpoints {display:flex;justify-content:space-between;gap:8px;}
 #correlation-explorer .correlation-endpoints span {flex:1;}
 #correlation-explorer .correlation-endpoints span:nth-child(2) {text-align:center;}
@@ -1385,6 +1405,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     slider.setAttribute(&#x27;aria-valuetext&#x27;,`Correlation ${r.toFixed(2)}`);
     points=x.map((v,i)=&gt;({x:v,y:r*v+Math.sqrt(Math.max(0,1-r*r))*e[i]}));
     const width=root.querySelector(&#x27;#correlation-chart&#x27;).getBoundingClientRect().width;
+    if(!width)return;
     const left=64,right=18,top=24,bottom=58;
     const side=Math.max(140,Math.min(width-left-right,430));
     const height=side+top+bottom;
@@ -1419,6 +1440,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     drawStandardization(animate);
   }
   function drawStandardization(){
+    if(!root.querySelector(&#x27;#standardization-chart&#x27;).getBoundingClientRect().width)return;
     const features=[
       {name:&#x27;Age&#x27;,unit:&#x27;years&#x27;,values:x.map(v=&gt;45+8*v)},
       {name:&#x27;Annual income&#x27;,unit:&#x27;USD / year&#x27;,values:e.map(v=&gt;50000*Math.exp(0.45*v))},
@@ -1473,6 +1495,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   });
   window.addEventListener(&#x27;openai:set_globals&#x27;,event=&gt;{if(event.detail?.globals?.widgetState){restore(event.detail.globals.widgetState);render();}});
   new ResizeObserver(()=&gt;render()).observe(root.querySelector(&#x27;#correlation-chart&#x27;));
+  new ResizeObserver(()=&gt;drawStandardization()).observe(root.querySelector(&#x27;#standardization-chart&#x27;));
   render();
 })();
 &lt;/script&gt;
