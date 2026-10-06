@@ -7,14 +7,23 @@ function updateThreshold(t){const previous=M.counts(points,threshold);threshold=
 eventText=dp||dn?`${dp>=0&&dn>=0?'Crossed':'Changed predictions:'} ${Math.abs(dp)} positive and ${Math.abs(dn)} negative instance${Math.abs(dp)+Math.abs(dn)===1?'':'s'}. ROC movement: ${dp>0?'up':dp<0?'down':'no vertical change'}; ${dn>0?'right':dn<0?'left':'no horizontal change'}.`:'No score crossed: the predictions and ROC point stay the same.';draw();}
 function next(){const t=M.levels(points).find(v=>v<threshold-1e-9);if(t===undefined){stop();return;}updateThreshold(t);if(!M.levels(points).some(v=>v<threshold-1e-9))stop();}
 function reset(){stop();threshold=1.01;eventText='Start: no instances are predicted positive. Lower the threshold to begin.';draw();}
-function drawScores(){const svg=d3.select(el('scores')),w=el('scores').getBoundingClientRect().width,h=220,sx=d3.scaleLinear().domain([-.01,1.01]).range([58,w-22]);svg.attr('viewBox',`0 0 ${w} ${h}`).attr('height',h).attr('aria-label',`Scores for 10 positives and 10 negatives. Threshold ${threshold.toFixed(2)}. Scores at or above it are predicted positive.`);svg.selectAll('*').remove();
-svg.append('rect').attr('x',sx(threshold)).attr('y',30).attr('width',Math.max(0,sx(1.01)-sx(threshold))).attr('height',136).attr('fill','var(--surface)');
-[72,135].forEach((y,i)=>{svg.append('line').attr('x1',sx(0)).attr('x2',sx(1)).attr('y1',y).attr('y2',y).attr('stroke','var(--border)');svg.append('text').attr('x',12).attr('y',y+4).text(i?'−':'＋');});
-svg.selectAll('path.dot').data(points).join('path').attr('class','dot').attr('d',p=>d3.symbol().type(p.positive?d3.symbolCircle:d3.symbolSquare).size(85)()).attr('transform',(p,i)=>`translate(${sx(p.score)},${(p.positive?72:135)+(i%3-1)*17})`).attr('fill',p=>p.score>=threshold?(p.positive?'var(--pos)':'var(--neg)'):'var(--bg)').attr('stroke',p=>p.positive?'var(--pos)':'var(--neg)').attr('stroke-width',2).append('title').text(p=>`${p.id}: true ${p.positive?'positive':'negative'}, score ${p.score.toFixed(2)}, predicted ${p.score>=threshold?'positive':'negative'}`);
-svg.append('line').attr('x1',sx(threshold)).attr('x2',sx(threshold)).attr('y1',22).attr('y2',168).attr('stroke','var(--line)').attr('stroke-width',2);
-svg.append('text').attr('x',Math.max(64,Math.min(w-62,sx(threshold)))).attr('y',16).attr('text-anchor','middle').text(`t = ${threshold.toFixed(2)}`);
-svg.append('rect').attr('class','drag-line').attr('x',sx(threshold)-14).attr('y',20).attr('width',28).attr('height',150).attr('fill','transparent').call(d3.drag().on('start',stop).on('drag',ev=>updateThreshold(Math.max(-.01,Math.min(1.01,sx.invert(ev.x))))));
-svg.append('g').attr('transform','translate(0,175)').call(d3.axisBottom(sx).tickValues(w<450?[0,.5,1]:[0,.2,.4,.6,.8,1]));svg.append('text').attr('x',w/2).attr('y',215).attr('text-anchor','middle').text('Model score');}
+function drawScores(){
+ const svg=d3.select(el('scores')),w=el('scores').getBoundingClientRect().width,top=32,row=24,sorted=[...points].sort((a,b)=>a.score-b.score||a.id.localeCompare(b.id)),bottom=top+row*sorted.length,h=bottom+24;
+ const split=sorted.filter(p=>p.score<threshold).length,lineY=top+row*split;
+ svg.attr('viewBox',`0 0 ${w} ${h}`).attr('height',h).attr('aria-label',`Instances sorted from lowest to highest score. Threshold ${threshold.toFixed(2)}. ${sorted.length-split} shaded rows below the line are predicted positive.`);svg.selectAll('*').remove();
+ [['Instance',14],['Class',w*.46],['Score',w-18]].forEach(([text,x],i)=>svg.append('text').attr('x',x).attr('y',18).attr('text-anchor',i===2?'end':'start').attr('font-weight',600).text(text));
+ svg.append('rect').attr('x',1).attr('y',top).attr('width',w-2).attr('height',bottom-top).attr('fill','none').attr('stroke','var(--border)');
+ const rows=svg.selectAll('g.instance').data(sorted).join('g').attr('class','instance').attr('data-id',p=>p.id).attr('data-predicted-positive',p=>String(p.score>=threshold)).attr('transform',(p,i)=>`translate(0,${top+i*row})`);
+ rows.append('rect').attr('x',2).attr('width',w-4).attr('height',row).attr('fill',p=>p.score>=threshold?'var(--surface)':'var(--bg)');
+ rows.append('text').attr('x',14).attr('y',16).text(p=>p.id.toUpperCase());
+ rows.append('path').attr('transform',`translate(${w*.46+8},12)`).attr('d',p=>d3.symbol().type(p.positive?d3.symbolCircle:d3.symbolSquare).size(45)()).attr('fill',p=>p.positive?'var(--pos)':'var(--neg)');
+ rows.append('text').attr('x',w*.46+22).attr('y',16).text(p=>p.positive?'+':'−');
+ rows.append('text').attr('x',w-18).attr('y',16).attr('text-anchor','end').text(p=>p.score.toFixed(2));
+ rows.append('title').text(p=>`${p.id}: actual ${p.positive?'positive':'negative'}, score ${p.score.toFixed(2)}, predicted ${p.score>=threshold?'positive':'negative'}`);
+ svg.append('line').attr('x1',0).attr('x2',w).attr('y1',lineY).attr('y2',lineY).attr('stroke','var(--line)').attr('stroke-width',3);
+ svg.append('text').attr('x',w/2).attr('y',h-5).attr('text-anchor','middle').text(`Threshold = ${threshold.toFixed(2)}`);
+ svg.append('rect').attr('class','drag-line').attr('x',0).attr('y',lineY-10).attr('width',w).attr('height',20).attr('fill','transparent').call(d3.drag().on('start',stop).on('drag',ev=>{const index=Math.max(0,Math.min(sorted.length,Math.round((ev.y-top)/row)));updateThreshold(index===sorted.length?1.01:sorted[index].score);}));
+}
 function drawRoc(){const svg=d3.select(el('roc')),w=el('roc').getBoundingClientRect().width,left=55,top=18,right=20,side=w-left-right,h=side+top+55,sx=d3.scaleLinear().domain([0,1]).range([left,left+side]),sy=d3.scaleLinear().domain([0,1]).range([top+side,top]);svg.attr('viewBox',`0 0 ${w} ${h}`).attr('height',h);svg.selectAll('*').remove();const all=M.curve(points),visible=all.filter(p=>p.threshold>=1||p.threshold>=threshold),current=M.counts(points,threshold);svg.attr('aria-label',`Current ROC point: false positive rate ${current.fpr.toFixed(2)}, true positive rate ${current.tpr.toFixed(2)}. ${visible.length-1} threshold groups crossed.`);
 svg.append('rect').attr('x',left).attr('y',top).attr('width',side).attr('height',side).attr('fill','none').attr('stroke','var(--border)');
 svg.append('path').attr('d',`M${sx(0)},${sy(0)}L${sx(1)},${sy(1)}`).attr('stroke','var(--muted)').attr('stroke-dasharray','5 5').attr('fill','none');
