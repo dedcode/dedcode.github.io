@@ -6,3 +6,5 @@
 .instance-controls{display:grid;grid-template-columns:36px minmax(0,1fr);gap:4px}.threshold-rail{position:relative}.threshold-label{font-variant-numeric:tabular-nums;margin-bottom:8px}#threshold{position:absolute;top:24px;left:4px;writing-mode:vertical-lr;direction:ltr;width:28px;height:496px;margin:0;touch-action:none}#scores{min-width:0}
 
 .lesson-controls>.row{justify-content:flex-start;gap:28px}.data-control{width:220px;font-size:14px}.data-control output{float:right;font-weight:600;font-variant-numeric:tabular-nums}.data-control input[type=range]{display:block;margin:8px 0 0}#instance-scroll{max-height:536px;overflow-y:auto;scrollbar-gutter:stable}
+
+button .control-icon{display:inline-block;width:20px;height:20px;vertical-align:middle;fill:currentColor;overflow:hidden}
