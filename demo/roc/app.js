@@ -1,7 +1,7 @@
 (()=>{
 const el=id=>document.getElementById(id),M=ROCModel;
 let points=M.data('overlap'),threshold=1.01,timer=null;
-const notes={overlap:'Some negative instances outrank positive ones.',perfect:'Every positive instance ranks above every negative instance.',reversed:'Every negative instance ranks above every positive instance. The scores rank the classes in reverse.'};
+const notes={random:'No class signal: both classes use the same score distribution.',strong:'Less overlap between the class score distributions.',overlap:'Some negative instances outrank positive ones.',perfect:'Every positive instance ranks above every negative instance.',reversed:'Every negative instance ranks above every positive instance. The scores rank the classes in reverse.'};
 function stop(){clearInterval(timer);timer=null;el('play').textContent='Play';}
 function updateThreshold(t){threshold=Math.round(t*100)/100;draw();const scroller=el('instance-scroll'),lineY=32+24*points.filter(p=>p.score>=threshold).length;if(lineY<scroller.scrollTop+24)scroller.scrollTop=Math.max(0,lineY-24);else if(lineY>scroller.scrollTop+scroller.clientHeight-24)scroller.scrollTop=lineY-scroller.clientHeight+24;}
 function next(){const t=M.levels(points).find(v=>v<threshold-1e-9);if(t===undefined){stop();return;}updateThreshold(t);if(!M.levels(points).some(v=>v<threshold-1e-9))stop();}
