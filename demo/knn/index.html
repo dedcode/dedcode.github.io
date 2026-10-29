@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore k-nearest neighbors: drag training points, change K and distance metrics, and see decision regions and individual neighbor votes update live.">
+  <title>K-Nearest Neighbors Explorer</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="model.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <a class="back" href="../datascience/">← Data science demos</a>
+    <div class="eyebrow">Learning from nearby examples</div>
+    <h1>k-nearest neighbors</h1>
+    <p class="intro">Change K. Move the points. Watch the boundary.</p>
+  </header>
+  <section class="controls" aria-label="Classifier settings">
+    <fieldset class="metric"><legend>Distance</legend><div class="segmented"><label><input type="radio" name="metric" value="l2" checked><span>L2 · Euclidean</span></label><label><input type="radio" name="metric" value="l1"><span>L1 · Manhattan</span></label></div></fieldset>
+    <label class="k-control" for="k">Neighbors <span class="value">K = <output id="k-value">3</output></span><input id="k" type="range" min="1" max="15" step="1" value="3"></label>
+    <label for="classes">Classes<select id="classes"><option>2</option><option>3</option><option selected>4</option><option>5</option></select></label>
+    <label for="count">Training points<select id="count"><option>20</option><option>30</option><option selected>40</option><option>50</option><option>60</option><option>80</option><option>100</option></select></label>
+    <button id="resample" type="button">New samples</button>
+  </section>
+  <div class="explorer">
+    <section class="map-section" aria-label="Decision regions and training data">
+      <div class="plot-heading"><h2>Decision regions</h2><span id="map-status" class="small" role="status"></span></div>
+      <div id="plot"><canvas id="regions" aria-hidden="true"></canvas><svg id="points" role="img" aria-label="Colored KNN decision regions, labeled training points and a query point"></svg></div>
+      <div id="legend" class="legend" aria-label="Class legend"></div>
+      <p class="hint">Drag a training point to reshape the regions. Click empty space to place the <strong>＋ query</strong>.</p>
+      <details class="point-editor"><summary>Edit a training point with the keyboard</summary><div class="edit-fields"><label>Point<select id="edit-point"></select></label><label>x₁<input id="edit-x" type="number" min="0" max="10" step="0.1"></label><label>x₂<input id="edit-y" type="number" min="0" max="10" step="0.1"></label></div></details>
+    </section>
+    <aside aria-label="Prediction for the query point">
+      <div class="query-heading"><span class="eyebrow">Inspect a prediction</span><h2 id="prediction">Query prediction</h2></div>
+      <div class="query-fields"><label>Query x₁<input id="query-x" type="number" min="0" max="10" step="0.1" value="6"></label><label>Query x₂<input id="query-y" type="number" min="0" max="10" step="0.1" value="5"></label></div>
+      <h3>Neighbor votes</h3>
+      <div id="votes"></div>
+      <p id="vote-summary" class="small"></p>
+      <p id="neighborhood" class="small"></p>
+      <div class="neighbors-heading"><h3>Nearest examples</h3><span class="small" id="distance-label">L2 distance</span></div>
+      <div class="neighbor-scroll"><table aria-label="The K nearest training examples"><thead><tr><th scope="col">Rank</th><th scope="col">Point</th><th scope="col">Class</th><th scope="col" class="numeric">Distance</th></tr></thead><tbody id="neighbors"></tbody></table></div>
+      <span id="announcement" class="sr-only" aria-live="polite"></span>
+    </aside>
+  </div>
+  <details class="explanation"><summary>How the prediction is made</summary>
+    <div class="explanation-grid"><p><strong>1. Measure distance.</strong> L2 is straight-line distance: √(Δx₁² + Δx₂²). L1 is the sum of coordinate differences: |Δx₁| + |Δx₂|. Both axes use the same units and scale.</p><p><strong>2. Find K neighbors.</strong> The dashed circle (L2) or diamond (L1) reaches the Kth neighbor. Exactly K examples vote, with equal weight.</p><p><strong>3. Count the votes.</strong> The class with the most votes wins. Equal largest vote counts are shown as a neutral tie. Equal distances are ordered by point ID, so the choice at the Kth position is reproducible.</p></div>
+    <p class="small">Background colors are a sampled view of predictions across the plane; the query and neighbor distances are calculated exactly. A vote fraction is not a calibrated probability. Small K can follow individual examples closely; larger K can smooth away local structure. Changes are kept until you reload. Changing class count, point count, or New samples generates a new dataset.</p>
+  </details>
+  <footer><span>An interactive KNN teaching demo</span><span>Inspired by the <a href="https://vision.stanford.edu/teaching/cs231n-demos/knn/">Stanford CS231n demo</a> · <a href="https://cs231n.github.io/classification/">Course notes</a></span></footer>
+</main>
+<noscript>This demo needs JavaScript to calculate neighbors and draw decision regions.</noscript>
+</body>
+</html>
