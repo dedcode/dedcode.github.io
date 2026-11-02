@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore K-means clustering step by step. Move data points and centroids, compare initializations, and watch the clustering objective decrease.">
+  <title>K-Means Explorer</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="model.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <a class="back" href="../knn/">← KNN demo</a>
+    <div class="eyebrow">Finding groups without labels</div>
+    <h1>k-means clustering</h1>
+    <p class="intro">Assign. Move. Repeat. Watch clusters take shape.</p>
+  </header>
+  <section class="controls" aria-label="Clustering settings">
+    <label class="k-control" for="k">Clusters <span class="value">K = <output id="k-value">3</output></span><input id="k" type="range" min="1" max="6" step="1" value="3"></label>
+    <label for="dataset">Dataset<select id="dataset"><option value="blobs">Three blobs</option><option value="rings">Concentric rings</option><option value="uniform">Uniform scatter</option></select></label>
+    <label for="count">Points<select id="count"><option>30</option><option selected>60</option><option>90</option><option>120</option><option>180</option></select></label>
+    <label for="initialization">Initialization<select id="initialization"><option value="random">Random samples</option><option value="kmeans++">K-means++</option></select></label>
+    <button id="resample" type="button">New data</button>
+  </section>
+
+  <div class="explorer">
+    <section class="map-section" aria-label="Data points and centroids">
+      <div class="plot-heading"><h2>Cluster space</h2><span id="plot-status" class="small">60 unlabeled points</span></div>
+      <svg id="plot" viewBox="0 0 600 600" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">K-means cluster space</title><desc id="plot-desc">Unlabeled points and numbered centroids. Step through assignment and centroid updates. The coordinate editor below provides a keyboard alternative to dragging.</desc></svg>
+      <div class="plot-options"><label><input id="regions" type="checkbox" checked>Nearest-centroid regions</label><label><input id="connections" type="checkbox" checked>Assignment lines</label><label><input id="trails" type="checkbox" checked>Centroid trails</label></div>
+      <p class="hint">Small dots are data. Numbered markers are <strong>centroids</strong>. Drag either to try a new starting point.</p>
+      <details class="point-editor"><summary>Edit coordinates with the keyboard</summary><div class="edit-fields"><label for="edit-item">Point or centroid<select id="edit-item"></select></label><label for="edit-x">x₁<input id="edit-x" type="number" min="0" max="10" step="0.1"></label><label for="edit-y">x₂<input id="edit-y" type="number" min="0" max="10" step="0.1"></label></div></details>
+    </section>
+
+    <aside aria-label="Clustering steps and progress">
+      <div class="stage-heading"><span class="eyebrow">Lloyd’s algorithm</span><h2 id="stage-title">Start with K centroids</h2><p id="stage-copy">The points have no labels yet. Each centroid is a candidate cluster center.</p></div>
+      <div class="phase-strip" aria-label="Next step"><span id="phase-assign" class="active">1 · Assign points</span><span id="phase-move">2 · Move centroids</span></div>
+      <div class="run-controls"><button id="step" class="primary" type="button">Assign points →</button><button id="play" type="button">▶ Play</button></div>
+      <div class="secondary-controls"><button id="reset" type="button">↺ Reset run</button><button id="reseed" type="button">New centroids</button></div>
+      <label class="speed-label" for="speed">Playback<select id="speed"><option value="1600" selected>Slow · 1.6 s / step</option><option value="900">Medium · 0.9 s / step</option><option value="450">Fast · 0.45 s / step</option></select></label>
+      <div class="stats"><div><span class="small">Iterations</span><strong id="iterations">0</strong></div><div><span class="small">Within-cluster SSE</span><strong id="inertia">—</strong></div></div>
+      <p class="small" id="progress-detail">First, assign each point to its nearest centroid.</p>
+      <div class="chart-heading"><h3>Objective over time</h3><span class="small">Lower is better</span></div>
+      <svg id="history" viewBox="0 0 300 108" role="img" aria-label="Within-cluster sum of squared distances at each step"></svg>
+      <p id="history-note" class="small">The chart starts after the first assignment.</p>
+      <div class="cluster-heading"><h3>Current clusters</h3><span class="small" id="assigned-count">0 assigned</span></div>
+      <div id="clusters" aria-label="Cluster sizes and centroid coordinates"></div>
+      <p id="empty-note" class="small" hidden></p>
+      <span id="announcement" class="sr-only" role="status"></span>
+    </aside>
+  </div>
+
+  <section class="takeaway"><span class="eyebrow">Try this</span><p id="experiment">Run the three blobs with K = 3, then try K = 2. K is a choice you make; the algorithm does not discover it.</p></section>
+  <details class="explanation"><summary>What is K-means doing?</summary>
+    <div class="explanation-grid"><p><strong>1. Assign points.</strong> Give each point the cluster of its closest centroid using Euclidean distance. The pale regions show which centroid is nearest at each location.</p><p><strong>2. Move centroids.</strong> Replace each centroid with the mean x₁ and mean x₂ of its assigned points. The point colors stay fixed during this step, until the next assignment.</p><p><strong>3. Repeat.</strong> Stop when an assignment step changes no labels. Each nonempty cluster has its centroid at the mean. Different starting positions can give different results.</p></div>
+    <p><strong>The objective:</strong> SSE = Σᵢ ‖xᵢ − μ<sub>cᵢ</sub>‖², the sum of squared distances from each point to its assigned centroid. Each assignment or mean update can only decrease or preserve this value. It can settle at a local optimum.</p>
+    <p><strong>KNN versus K-means:</strong> KNN uses labeled neighbors to predict a label. K-means groups unlabeled data. Here, K means the number of clusters.</p>
+    <p class="small">K-means++ spreads starting centers by sampling in proportion to squared distance from the closest selected center; it does not guarantee the best result. Distance ties go to the lower-numbered centroid. Empty clusters keep their previous centroid. Both axes have equal scale. Changing data, K, initialization, or coordinates starts a new run; Reset run replays the same starting centers. State lasts until you reload.</p>
+  </details>
+  <footer><span>An interactive K-means teaching demo</span><span><a href="../knn/">Explore KNN</a> · <a href="../kernel-demo/">Explore the kernel trick</a></span></footer>
+</main>
+<noscript>This demo needs JavaScript to calculate clusters and draw the plot.</noscript>
+</body>
+</html>
